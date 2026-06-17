@@ -1,87 +1,153 @@
-/* AMB Driver Log - Custom Styles */
+/* ==========================================
+   AMB Driver Log - Custom Styles
+   ========================================== */
 
-:root {
-  --amb-primary: #0d47a1;
-  --amb-secondary: #37474f;
-}
-
+/* General */
 body {
-  background-color: #f5f6fa;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f5f6fa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Navbar */
 .navbar-brand {
-  font-size: 1.25rem;
-  letter-spacing: 0.02em;
+    font-weight: 600;
+    font-size: 1.4rem;
 }
 
-.nav-link {
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-  border-radius: 0.375rem;
-  padding: 0.5rem 0.75rem !important;
-}
-
-.nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.15);
-}
-
-.nav-link.active {
-  background-color: rgba(255, 255, 255, 0.25);
-  font-weight: 600;
-}
-
+/* Cards */
 .card {
-  border-radius: 0.5rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+/* Dashboard Stats */
+.stat-card {
+    border-left: 4px solid;
+    transition: transform 0.15s ease;
 }
 
-.table {
-  font-size: 0.9rem;
+.stat-card:hover {
+    transform: translateY(-2px);
 }
 
-.table thead th {
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
+.stat-card .card-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
 }
 
-.badge {
-  font-weight: 500;
+.stat-card .display-6 {
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 0;
 }
 
-.btn {
-  border-radius: 0.5rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
+/* Status badges */
+.badge-scheduled {
+    background-color: #6c757d;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15) !important;
+.badge-checked-in {
+    background-color: #fd7e14;
 }
 
-footer {
-  font-size: 0.875rem;
+.badge-completed {
+    background-color: #198754;
+}
+
+.badge-early {
+    background-color: #0d6efd;
+}
+
+.badge-on-time {
+    background-color: #20c997;
+}
+
+.badge-late {
+    background-color: #dc3545;
+}
+
+.badge-missed {
+    background-color: #212529;
+}
+
+.badge-cancelled {
+    background-color: #adb5bd;
+}
+
+/* Tables */
+.table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* KPI Export table */
+.kpi-preview thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.kpi-preview td {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* Form styling */
+.form-label {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+/* Quick action buttons */
+.quick-action-btn {
+    padding: 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.quick-action-btn i {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 8px;
+    border: none;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    background: none;
+    padding: 0;
+}
+
+/* Footer */
+.footer {
+    margin-top: 3rem;
+    padding: 1.5rem 0;
+    border-top: 1px solid #dee2e6;
+    color: #6c757d;
+    font-size: 0.85rem;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .navbar-brand {
-    font-size: 1rem;
-  }
+    .stat-card .display-6 {
+        font-size: 1.5rem;
+    }
 
-  h2 {
-    font-size: 1.5rem;
-  }
-
-  .btn {
-    font-size: 0.875rem;
-  }
+    .quick-action-btn {
+        padding: 1rem;
+        font-size: 0.9rem;
+    }
 }

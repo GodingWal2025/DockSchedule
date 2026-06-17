@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Add Appointment - AMB Driver Log{% endblock %}
+
+{% block breadcrumbs %}
+<div class="container-fluid mb-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'appointment_list' %}">Appointments</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Add Appointment</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-plus-circle-fill text-primary me-2"></i>Add Appointment</h2>
+            <p class="text-muted">Create a new inbound or outbound appointment.</p>
+        </div>
+    </div>
+
+    <!-- Duplicate BOL Alert -->
+    <div id="bol-alert" class="alert alert-warning alert-dismissible fade d-none" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Duplicate BOL Detected!</strong>
+        <span id="bol-alert-message"></span>
+        <button type="button" class="btn btn-sm btn-outline-warning ms-3" id="bol-continue-btn">Continue Anyway</button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Capacity Warning -->
+    <div id="capacity-alert" class="alert alert-warning alert-dismissible fade d-none" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Capacity Warning!</strong>
+        <span id="capacity-alert-message"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card">
+        <div class="card-header">
+            <i class="bi bi-calendar-plus me-2"></i>Appointment Information
+        </div>
+        <div class="card-body">
+            <form method="post" id="appointment-form" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <i class="bi bi-x-circle-fill me-2"></i>{{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="row">
+                    <!-- Left Column: Appointment Info -->
+                    <div class="col-md-6">
+                        <h5 class="mb-3 text-muted"><i class="bi bi-info-circle me-2"></i>Appointment Info</h5>
+
+                        <!-- Appointment Type -->
+                        <div class="mb-3">
+                            <label for="{{ form.appt_type.id_for_label }}" class="form-label">Appointment Type</label>
+                            {{ form.appt_type }}
+                            {% if form.appt_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.appt_type.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Appointment Date -->
+                        <div class="mb-3">
+                            <label for="{{ form.appt_date.id_for_label }}" class="form-label">
+                                <i class="bi bi-calendar3 me-1"></i>Appointment Date
+                            </label>
+                            {{ form.appt_date }}
+                            {% if form.appt_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.appt_date.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Appointment Time -->
+                        <div class="mb-3">
+                            <label for="{{ form.appt_time.id_for_label }}" class="form-label">
+                                <i class="bi bi-clock me-1"></i>Appointment Time
+                            </label>
+                            {{ form.appt_time }}
+                            {% if form.appt_time.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.appt_time.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Customer -->
+                        <div class="mb-3">
+                            <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                <i class="bi bi-building me-1"></i>Customer
+                            </label>
+                            {{ form.customer }}
+                            {% if form.customer.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.customer.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Product Type -->
+                        <div class="mb-3">
+                            <label for="{{ form.product_type.id_for_label }}" class="form-label">
+                                <i class="bi bi-box-seam me-1"></i>Type / Product
+                            </label>
+                            {{ form.product_type }}
+                            {% if form.product_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.product_type.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Carrier -->
+                        <div class="mb-3">
+                            <label for="{{ form.carrier.id_for_label }}" class="form-label">
+                                <i class="bi bi-truck me-1"></i>Carrier
+                            </label>
+                            {{ form.carrier }}
+                            {% if form.carrier.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.carrier.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Details -->
+                    <div class="col-md-6">
+                        <h5 class="mb-3 text-muted"><i class="bi bi-list-ul me-2"></i>Details</h5>
+
+                        <!-- BOL / Shipment Number -->
+                        <div class="mb-3">
+                            <label for="{{ form.bol_shipment_no.id_for_label }}" class="form-label">
+                                <i class="bi bi-upc-scan me-1"></i>BOL / Shipment Number
+                            </label>
+                            {{ form.bol_shipment_no }}
+                            {% if form.bol_shipment_no.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.bol_shipment_no.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">Enter the Bill of Lading or shipment reference number.</div>
+                        </div>
+
+                        <!-- Delivery Number -->
+                        <div class="mb-3">
+                            <label for="{{ form.delivery_no.id_for_label }}" class="form-label">
+                                <i class="bi bi-hash me-1"></i>Delivery Number
+                            </label>
+                            {{ form.delivery_no }}
+                            {% if form.delivery_no.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.delivery_no.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                <i class="bi bi-chat-square-text me-1"></i>Notes
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.notes.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="row">
+                    <div class="col">
+                        <a href="{% url 'appointment_list' %}" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-x-lg me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Save Appointment
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    const bolField = document.getElementById('{{ form.bol_shipment_no.id_for_label }}');
+    const dateField = document.getElementById('{{ form.appt_date.id_for_label }}');
+    const timeField = document.getElementById('{{ form.appt_time.id_for_label }}');
+    const typeField = document.getElementById('{{ form.appt_type.id_for_label }}');
+    const bolAlert = document.getElementById('bol-alert');
+    const bolAlertMessage = document.getElementById('bol-alert-message');
+    const bolContinueBtn = document.getElementById('bol-continue-btn');
+    const capacityAlert = document.getElementById('capacity-alert');
+    const capacityAlertMessage = document.getElementById('capacity-alert-message');
+
+    // --- Duplicate BOL Check ---
+    if (bolField) {
+        let bolCheckTimeout;
+
+        bolField.addEventListener('blur', function() {
+            const value = this.value.trim();
+            if (!value) {
+                bolAlert.classList.add('d-none');
+                return;
+            }
+
+            fetch(`{% url 'api_check_bol' %}?bol=${encodeURIComponent(value)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists && data.matches && data.matches.length > 0) {
+                        const match = data.matches[0];
+                        bolAlertMessage.innerHTML = `
+                            BOL <strong>${match.bol}</strong> already exists for
+                            <strong>${match.customer}</strong> on
+                            <strong>${match.date}</strong> (Status: ${match.status}).
+                        `;
+                        bolAlert.classList.remove('d-none');
+                        bolAlert.classList.add('show');
+                    } else {
+                        bolAlert.classList.add('d-none');
+                    }
+                })
+                .catch(err => console.error('BOL check error:', err));
+        });
+
+        if (bolContinueBtn) {
+            bolContinueBtn.addEventListener('click', function() {
+                bolAlert.classList.add('d-none');
+            });
+        }
+    }
+
+    // --- Capacity Check ---
+    function checkCapacity() {
+        const date = dateField ? dateField.value : '';
+        const time = timeField ? timeField.value : '';
+        const apptType = typeField ? typeField.value : '';
+
+        if (!date || !time || !apptType) {
+            capacityAlert.classList.add('d-none');
+            return;
+        }
+
+        fetch(`{% url 'api_capacity_check' %}?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&appt_type=${encodeURIComponent(apptType)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.at_capacity) {
+                    capacityAlertMessage.textContent =
+                        `This time slot is at capacity (${data.existing}/${data.max_capacity}). You may still book with supervisor approval.`;
+                    capacityAlert.classList.remove('d-none');
+                    capacityAlert.classList.add('show');
+                } else {
+                    capacityAlert.classList.add('d-none');
+                }
+            })
+            .catch(err => console.error('Capacity check error:', err));
+    }
+
+    if (dateField) dateField.addEventListener('change', checkCapacity);
+    if (timeField) timeField.addEventListener('change', checkCapacity);
+    if (typeField) typeField.addEventListener('change', checkCapacity);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Appointment Detail - AMB Driver Log{% endblock %}
+
+{% block breadcrumbs %}
+<div class="container-fluid mb-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'appointment_list' %}">Appointments</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Appointment #{{ appointment.id }}</li>
+        </ol>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h2><i class="bi bi-calendar-event text-primary me-2"></i>Appointment Detail</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'appointment_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to List
+            </a>
+            {% if appointment.status == 'Scheduled' %}
+            <a href="{% url 'check_in' %}?bol={{ appointment.bol_shipment_no|urlencode }}" class="btn btn-warning ms-2">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Check In
+            </a>
+            {% elif appointment.status == 'Checked In' %}
+            <a href="{% url 'check_out' %}?bol={{ appointment.bol_shipment_no|urlencode }}" class="btn btn-success ms-2">
+                <i class="bi bi-box-arrow-right me-1"></i>Check Out
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Appointment Info Card -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-info-circle me-2"></i>Appointment Information</span>
+                    <div>
+                        {% if appointment.appt_type == 'IB' %}
+                            <span class="badge bg-primary">Inbound</span>
+                        {% else %}
+                            <span class="badge bg-info">Outbound</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <th class="text-muted" style="width: 35%;"><i class="bi bi-tag me-2"></i>Type</th>
+                                <td>
+                                    {% if appointment.appt_type == 'IB' %}
+                                        <span class="badge bg-primary">IB</span>
+                                    {% else %}
+                                        <span class="badge bg-info">OB</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-activity me-2"></i>Status</th>
+                                <td>
+                                    {% if appointment.status == 'Scheduled' %}
+                                        <span class="badge bg-secondary">Scheduled</span>
+                                    {% elif appointment.status == 'Checked In' %}
+                                        <span class="badge bg-warning text-dark">Checked In</span>
+                                    {% elif appointment.status == 'Completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% elif appointment.status == 'Late' %}
+                                        <span class="badge bg-danger">Late</span>
+                                    {% elif appointment.status == 'Missed' %}
+                                        <span class="badge bg-dark">Missed</span>
+                                    {% elif appointment.status == 'Cancelled' %}
+                                        <span class="badge bg-muted text-dark" style="background-color: #adb5bd;">Cancelled</span>
+                                    {% elif appointment.status == 'Early' %}
+                                        <span class="badge bg-info">Early</span>
+                                    {% elif appointment.status == 'On Time' %}
+                                        <span class="badge bg-success">On Time</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ appointment.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-calendar3 me-2"></i>Date</th>
+                                <td>{{ appointment.appt_date|date:"Y-m-d (l)" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-clock me-2"></i>Time</th>
+                                <td>{{ appointment.appt_time|time:"H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-building me-2"></i>Customer</th>
+                                <td>{{ appointment.customer.name }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-truck me-2"></i>Carrier</th>
+                                <td>{{ appointment.carrier.name }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-box-seam me-2"></i>Product Type</th>
+                                <td>{{ appointment.product_type.name }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-upc-scan me-2"></i>BOL / Shipment</th>
+                                <td>
+                                    {% if appointment.bol_shipment_no %}
+                                        <code>{{ appointment.bol_shipment_no }}</code>
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-hash me-2"></i>Delivery No</th>
+                                <td>
+                                    {% if appointment.delivery_no %}
+                                        {{ appointment.delivery_no }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if appointment.notes %}
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-chat-square-text me-2"></i>Notes</th>
+                                <td>{{ appointment.notes|linebreaksbr }}</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Driver Visit Card -->
+        <div class="col-lg-6 mb-4">
+            {% if appointment.visit %}
+            <div class="card h-100">
+                <div class="card-header">
+                    <i class="bi bi-person-badge me-2"></i>Driver Visit Information
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <th class="text-muted" style="width: 35%;"><i class="bi bi-person me-2"></i>Visitor Name</th>
+                                <td>
+                                    {% if appointment.visit.visitor_name %}
+                                        {{ appointment.visit.visitor_name }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-truck-front me-2"></i>Trailer No</th>
+                                <td>
+                                    {% if appointment.visit.trailer_no %}
+                                        {{ appointment.visit.trailer_no }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-card-text me-2"></i>License State</th>
+                                <td>
+                                    {% if appointment.visit.drivers_license_state %}
+                                        {{ appointment.visit.drivers_license_state }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-lock me-2"></i>Load Lock</th>
+                                <td>
+                                    {% if appointment.visit.load_lock == 'Y' %}
+                                        <span class="badge bg-success">Yes</span>
+                                    {% elif appointment.visit.load_lock == 'N' %}
+                                        <span class="badge bg-danger">No</span>
+                                    {% elif appointment.visit.load_lock == 'NA' %}
+                                        <span class="badge bg-secondary">N/A</span>
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-door-open me-2"></i>Assigned Door</th>
+                                <td>
+                                    {% if appointment.visit.assigned_door %}
+                                        {{ appointment.visit.assigned_door.door_name }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-person-gear me-2"></i>PIT Operator</th>
+                                <td>
+                                    {% if appointment.visit.pit_operator %}
+                                        {{ appointment.visit.pit_operator.name }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-box-arrow-in-right me-2"></i>Check-In Time</th>
+                                <td>
+                                    {% if appointment.visit.check_in_time %}
+                                        {{ appointment.visit.check_in_time|date:"Y-m-d H:i:s" }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-box-arrow-right me-2"></i>Check-Out Time</th>
+                                <td>
+                                    {% if appointment.visit.check_out_time %}
+                                        {{ appointment.visit.check_out_time|date:"Y-m-d H:i:s" }}
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-hourglass-split me-2"></i>Dwell Time</th>
+                                <td>
+                                    {% if appointment.visit.dwell_time_display %}
+                                        <span class="font-monospace">{{ appointment.visit.dwell_time_display }}</span>
+                                    {% else %}
+                                        <span class="text-muted">--</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if appointment.visit.notes %}
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-chat-square-text me-2"></i>Visit Notes</th>
+                                <td>{{ appointment.visit.notes|linebreaksbr }}</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <div class="card h-100">
+                <div class="card-header">
+                    <i class="bi bi-person-badge me-2"></i>Driver Visit Information
+                </div>
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-person-x display-4 text-muted mb-3 d-block"></i>
+                    <p class="text-muted mb-0">No driver visit recorded yet.</p>
+                    {% if appointment.status == 'Scheduled' %}
+                    <a href="{% url 'check_in' %}?bol={{ appointment.bol_shipment_no|urlencode }}" class="btn btn-warning btn-sm mt-3">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Check In Driver
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons Row -->
+    <div class="row mt-2">
+        <div class="col">
+            <div class="card">
+                <div class="card-body d-flex gap-2">
+                    <a href="{% url 'appointment_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back to List
+                    </a>
+                    {% if appointment.status == 'Scheduled' %}
+                    <a href="{% url 'check_in' %}?bol={{ appointment.bol_shipment_no|urlencode }}" class="btn btn-warning">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Check In
+                    </a>
+                    {% elif appointment.status == 'Checked In' %}
+                    <a href="{% url 'check_out' %}?bol={{ appointment.bol_shipment_no|urlencode }}" class="btn btn-success">
+                        <i class="bi bi-box-arrow-right me-1"></i>Check Out
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
