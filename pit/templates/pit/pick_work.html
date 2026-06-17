@@ -1,0 +1,132 @@
+{% extends 'pit/base.html' %}
+
+{% block title %}Pick Work - #{{ task.pick_number }}{% endblock %}
+
+{% block content %}
+<div class="card mb-3 {% if task.status == 'In Progress' %}border-primary{% endif %}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <span class="badge bg-secondary fs-6">PICK</span>
+                {% if task.priority == 'High' %}
+                <span class="badge bg-danger fs-6">HIGH</span>
+                {% elif task.priority == 'Low' %}
+                <span class="badge bg-info fs-6">LOW</span>
+                {% else %}
+                <span class="badge bg-warning text-dark fs-6">NORMAL</span>
+                {% endif %}
+                <h4 class="fw-bold mt-2">Pick #{{ task.pick_number }}</h4>
+                <p class="mb-1"><strong>Customer:</strong> {{ task.customer.name|default:"N/A" }}</p>
+                <p class="mb-1"><strong>Product:</strong> {{ task.product_type.name|default:"N/A" }}</p>
+                <p class="mb-1"><strong>Quantity:</strong> {{ task.quantity }}</p>
+                {% if task.from_location %}
+                <p class="mb-1"><strong>From Location:</strong> {{ task.from_location }}</p>
+                {% endif %}
+                {% if task.staging_lane %}
+                <p class="mb-0"><strong>To Lane:</strong> {{ task.staging_lane.lane_name }}</p>
+                {% endif %}
+            </div>
+            <div class="text-end">
+                {% if task.status == 'Pending' %}
+                <span class="badge bg-secondary fs-5">PENDING</span>
+                {% elif task.status == 'In Progress' %}
+                <span class="badge bg-primary fs-5">IN PROGRESS</span>
+                <div class="timer-display mt-2" data-started="{{ task.started_at|date:'c' }}">
+                    <span class="fs-2 fw-bold text-primary timer-value">00:00</span>
+                </div>
+                {% elif task.status == 'Completed' %}
+                <span class="badge bg-success fs-5">COMPLETED</span>
+                <p class="text-success fw-bold mt-2">{{ task.duration_display }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if task.notes %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> <strong>Notes:</strong> {{ task.notes }}
+</div>
+{% endif %}
+
+<div class="row g-3 mt-2">
+    {% if task.status == 'Pending' %}
+    <div class="col-12">
+        <button id="btn-start" class="btn btn-success w-100 py-4 fs-2 fw-bold" data-task-id="{{ task.id }}" data-action="start">
+            <i class="bi bi-play-circle"></i> START PICK
+        </button>
+    </div>
+    {% elif task.status == 'In Progress' %}
+    <div class="col-12">
+        <button id="btn-complete" class="btn btn-primary w-100 py-4 fs-2 fw-bold" data-task-id="{{ task.id }}" data-action="complete">
+            <i class="bi bi-check-circle"></i> COMPLETE
+        </button>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-success text-center py-4 fs-4">
+            <i class="bi bi-check-all"></i> Completed in {{ task.duration_display }}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-12">
+        <a href="{% url 'pit_pick' %}" class="btn btn-outline-dark w-100 py-3 fs-4">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateTimer() {
+    const timerEl = document.querySelector('.timer-display');
+    if (!timerEl) return;
+    const started = new Date(timerEl.dataset.started);
+    const now = new Date();
+    const diff = Math.floor((now - started) / 1000);
+    const m = Math.floor(diff / 60);
+    const s = diff % 60;
+    const h = Math.floor(m / 60);
+    const displayM = m % 60;
+    timerEl.querySelector('.timer-value').textContent =
+        h > 0 ? `${h}:${String(displayM).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+if (document.querySelector('.timer-display')) {
+    setInterval(updateTimer, 1000);
+    updateTimer();
+}
+
+document.querySelectorAll('#btn-start, #btn-complete').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const taskId = this.dataset.taskId;
+        const action = this.dataset.action;
+        const url = action === 'start'
+            ? `/pit/pick/${taskId}/start/`
+            : `/pit/pick/${taskId}/complete/`;
+
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Working...';
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+            });
+            const data = await response.json();
+            if (data.error) {
+                alert(data.error);
+                this.disabled = false;
+                this.innerHTML = action === 'start' ? '<i class="bi bi-play-circle"></i> START PICK' : '<i class="bi bi-check-circle"></i> COMPLETE';
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            alert('Error: ' + err.message);
+            this.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

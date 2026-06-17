@@ -1,0 +1,164 @@
+{% extends 'pit/base.html' %}
+
+{% block title %}Putaway - {{ task.product_info }}{% endblock %}
+
+{% block content %}
+<div class="card mb-3 {% if task.status == 'In Progress' %}border-primary{% endif %}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <span class="badge bg-success fs-6">PUTAWAY</span>
+                <h4 class="fw-bold mt-2">{{ task.product_info }}</h4>
+                <p class="mb-1"><strong>From:</strong> {{ task.appointment.visit.assigned_door.door_name|default:"Receiving" }}</p>
+                {% if task.staging_lane %}
+                <p class="mb-0"><strong>To Lane:</strong> {{ task.staging_lane.lane_name }}</p>
+                {% endif %}
+            </div>
+            <div class="text-end">
+                {% if task.status == 'Pending' %}
+                <span class="badge bg-success fs-5">PENDING</span>
+                {% elif task.status == 'In Progress' %}
+                <span class="badge bg-primary fs-5">IN PROGRESS</span>
+                <div class="timer-display mt-2" data-started="{{ task.started_at|date:'c' }}">
+                    <span class="fs-2 fw-bold text-primary timer-value">00:00</span>
+                </div>
+                {% elif task.status == 'Completed' %}
+                <span class="badge bg-success fs-5">COMPLETED</span>
+                <p class="text-success fw-bold mt-2">{{ task.duration_display }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-2">
+    {% if task.status == 'Pending' %}
+    <!-- Select Staging Lane before starting -->
+    <div class="col-12">
+        <div class="card border-success">
+            <div class="card-body">
+                <label class="form-label fw-bold fs-5"><i class="bi bi-geo-alt"></i> Select Staging Lane</label>
+                <select id="staging-lane" class="form-select form-select-lg mb-3" required>
+                    <option value="">-- Choose Lane --</option>
+                    {% for lane in lanes %}
+                    <option value="{{ lane.id }}">{{ lane.lane_name }} {% if lane.area %}({{ lane.area }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+                <button id="btn-start" class="btn btn-success w-100 py-4 fs-2 fw-bold" data-task-id="{{ task.id }}" data-action="start">
+                    <i class="bi bi-play-circle"></i> START PUTAWAY
+                </button>
+            </div>
+        </div>
+    </div>
+    {% elif task.status == 'In Progress' %}
+    <div class="col-12">
+        <div class="alert alert-light border">
+            <strong><i class="bi bi-geo-alt"></i> Staging Lane:</strong> {{ task.staging_lane.lane_name|default:"Not set" }}
+        </div>
+        <button id="btn-complete" class="btn btn-primary w-100 py-4 fs-2 fw-bold" data-task-id="{{ task.id }}" data-action="complete">
+            <i class="bi bi-check-circle"></i> COMPLETE
+        </button>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-success text-center py-4 fs-4">
+            <i class="bi bi-check-all"></i> Completed in {{ task.duration_display }}
+            {% if task.staging_lane %}
+            <br><small>Put in {{ task.staging_lane.lane_name }}</small>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-12">
+        <a href="{% url 'pit_putaway' %}" class="btn btn-outline-dark w-100 py-3 fs-4">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateTimer() {
+    const timerEl = document.querySelector('.timer-display');
+    if (!timerEl) return;
+    const started = new Date(timerEl.dataset.started);
+    const now = new Date();
+    const diff = Math.floor((now - started) / 1000);
+    const m = Math.floor(diff / 60);
+    const s = diff % 60;
+    const h = Math.floor(m / 60);
+    const displayM = m % 60;
+    timerEl.querySelector('.timer-value').textContent =
+        h > 0 ? `${h}:${String(displayM).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+if (document.querySelector('.timer-display')) {
+    setInterval(updateTimer, 1000);
+    updateTimer();
+}
+
+const startBtn = document.getElementById('btn-start');
+if (startBtn) {
+    startBtn.addEventListener('click', async function() {
+        const lane = document.getElementById('staging-lane').value;
+        if (!lane) {
+            alert('Please select a staging lane first.');
+            return;
+        }
+        const taskId = this.dataset.taskId;
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Working...';
+
+        try {
+            // Start with lane selection
+            const response = await fetch(`/pit/putaway/${taskId}/start/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                body: new URLSearchParams({staging_lane: lane})
+            });
+            const data = await response.json();
+            if (data.error) {
+                alert(data.error);
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-play-circle"></i> START PUTAWAY';
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            alert('Error: ' + err.message);
+            this.disabled = false;
+        }
+    });
+}
+
+const completeBtn = document.getElementById('btn-complete');
+if (completeBtn) {
+    completeBtn.addEventListener('click', async function() {
+        const taskId = this.dataset.taskId;
+        const lane = document.getElementById('staging-lane')?.value || '';
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Working...';
+
+        try {
+            const response = await fetch(`/pit/putaway/${taskId}/complete/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                body: new URLSearchParams({staging_lane: lane})
+            });
+            const data = await response.json();
+            if (data.error) {
+                alert(data.error);
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-check-circle"></i> COMPLETE';
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            alert('Error: ' + err.message);
+            this.disabled = false;
+        }
+    });
+}
+</script>
+{% endblock %}

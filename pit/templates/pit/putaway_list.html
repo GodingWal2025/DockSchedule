@@ -1,0 +1,59 @@
+{% extends 'pit/base.html' %}
+
+{% block title %}Putaway - PIT{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-box-seam text-success"></i> Putaway Tasks</h3>
+    <a href="{% url 'pit_board' %}" class="btn btn-outline-dark">Back</a>
+</div>
+
+{% for task in tasks %}
+<div class="card mb-3 shadow-sm
+    {% if task.status == 'Pending' %}border-success
+    {% elif task.status == 'In Progress' %}border-primary
+    {% elif task.status == 'Completed' %}border-success opacity-75
+    {% endif %}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="d-flex gap-2 mb-1">
+                    {% if task.status == 'Pending' %}
+                    <span class="badge bg-success">PENDING</span>
+                    {% elif task.status == 'In Progress' %}
+                    <span class="badge bg-primary">IN PROGRESS</span>
+                    {% elif task.status == 'Completed' %}
+                    <span class="badge bg-success">DONE</span>
+                    {% endif %}
+                    {% if task.staging_lane %}
+                    <span class="badge bg-secondary">{{ task.staging_lane.lane_name }}</span>
+                    {% endif %}
+                </div>
+                <h5 class="fw-bold mb-1">{{ task.product_info }}</h5>
+                <p class="mb-0 text-muted">
+                    <strong>From:</strong> {{ task.appointment.visit.assigned_door.door_name|default:"Inbound" }}<br>
+                    {% if task.operator %}
+                    <small class="text-primary"><i class="bi bi-person"></i> {{ task.operator.name }}</small>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="ms-3">
+                {% if task.status == 'Pending' %}
+                <a href="{% url 'pit_putaway_work' task.id %}" class="btn btn-success btn-lg px-4">START</a>
+                {% elif task.status == 'In Progress' %}
+                <a href="{% url 'pit_putaway_work' task.id %}" class="btn btn-primary btn-lg px-4">VIEW</a>
+                {% else %}
+                <span class="text-muted"><i class="bi bi-check-lg fs-1"></i></span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox display-1"></i>
+    <p class="fs-4 mt-3">No putaway tasks</p>
+    <p>Putaway tasks are created when inbound unloads are completed</p>
+</div>
+{% endfor %}
+{% endblock %}
