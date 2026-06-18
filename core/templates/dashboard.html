@@ -1,15 +1,28 @@
 {% extends 'base.html' %}
 
-{% block title %}Dashboard - AMB Driver Log{% endblock %}
+{% block title %}Dashboard - GXO Dock{% endblock %}
 {% block nav_dashboard %}active{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-  <div class="col-12">
-    <h2 class="fw-bold text-primary">
-      <i class="bi bi-speedometer2 me-2"></i>Warehouse Operations Dashboard
-    </h2>
-    <p class="text-muted mb-0">Real-time overview of today's driver appointments</p>
+<!-- Page Head -->
+<div class="mb-4 pb-3" style="border-bottom: 1px solid #111110;">
+  <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
+    <div>
+      <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:2.2rem;line-height:1.05;letter-spacing:-.02em;margin-bottom:6px;">
+        Warehouse <em style="font-style:normal;color:var(--accent);">Operations</em>
+      </h1>
+      <div style="font-size:13px;color:var(--ink-soft);letter-spacing:.02em;">
+        <i class="bi bi-calendar3 me-1"></i>{{ today|date:"F d, Y" }} · Real-time overview of today's driver appointments
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-primary fs-6 px-3 py-2">
+        <i class="bi bi-arrow-down-circle me-1"></i>{{ ib_count|default:"0" }} Inbound
+      </span>
+      <span class="badge bg-info fs-6 px-3 py-2">
+        <i class="bi bi-arrow-up-circle me-1"></i>{{ ob_count|default:"0" }} Outbound
+      </span>
+    </div>
   </div>
 </div>
 
@@ -71,23 +84,6 @@
   </div>
 </div>
 
-<!-- IB/OB Badges Row -->
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="d-flex align-items-center gap-3 flex-wrap">
-      <span class="badge bg-primary fs-6 px-3 py-2">
-        <i class="bi bi-arrow-down-circle me-1"></i>{{ ib_count|default:"0" }} Inbound
-      </span>
-      <span class="badge bg-info fs-6 px-3 py-2">
-        <i class="bi bi-arrow-up-circle me-1"></i>{{ ob_count|default:"0" }} Outbound
-      </span>
-      <span class="text-muted ms-auto">
-        <i class="bi bi-calendar3 me-1"></i>{{ today|date:"F d, Y" }}
-      </span>
-    </div>
-  </div>
-</div>
-
 <!-- Quick Action Buttons -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
@@ -97,13 +93,13 @@
     </a>
   </div>
   <div class="col-6 col-md-3">
-    <a href="{% url 'check_in' %}" class="btn btn-warning w-100 py-3 shadow-sm text-dark">
+    <a href="{% url 'check_in' %}" class="btn btn-warning w-100 py-3 shadow-sm">
       <i class="bi bi-box-arrow-in-right fs-3 d-block mb-1"></i>
       <span class="fw-semibold">Check In Driver</span>
     </a>
   </div>
   <div class="col-6 col-md-3">
-    <a href="{% url 'check_out' %}" class="btn btn-info w-100 py-3 shadow-sm text-dark">
+    <a href="{% url 'check_out' %}" class="btn btn-info w-100 py-3 shadow-sm">
       <i class="bi bi-box-arrow-left fs-3 d-block mb-1"></i>
       <span class="fw-semibold">Check Out Driver</span>
     </a>
@@ -120,10 +116,10 @@
 <div class="row mb-4">
   <div class="col-12">
     <div class="card shadow-sm">
-      <div class="card-header bg-white d-flex align-items-center justify-content-between">
-        <h5 class="mb-0 fw-semibold text-primary">
-          <i class="bi bi-calendar-check me-2"></i>Scheduled Appointments Today
-        </h5>
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span style="font-size:14px;font-weight:600;">
+          <i class="bi bi-calendar-check me-2" style="color:var(--accent);"></i>Scheduled Appointments Today
+        </span>
         <span class="badge bg-primary rounded-pill">{{ scheduled_list|length }}</span>
       </div>
       <div class="card-body p-0">
@@ -149,7 +145,7 @@
                     <span class="badge bg-info">OB</span>
                   {% endif %}
                 </td>
-                <td>{{ appt.appt_time|time:"H:i" }}</td>
+                <td style="font-family:'JetBrains Mono',monospace;font-size:13px;">{{ appt.appt_time|time:"H:i" }}</td>
                 <td>{{ appt.customer.name }}</td>
                 <td>{{ appt.carrier.name }}</td>
                 <td><code>{{ appt.bol_shipment_no|default:"—" }}</code></td>
@@ -159,8 +155,8 @@
               </tr>
               {% empty %}
               <tr>
-                <td colspan="6" class="text-center text-muted py-4">
-                  <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                <td colspan="6" class="text-center text-muted py-5">
+                  <i class="bi bi-inbox fs-2 d-block mb-2" style="opacity:.4;"></i>
                   No scheduled appointments for today
                 </td>
               </tr>
@@ -177,11 +173,11 @@
 <div class="row">
   <div class="col-12">
     <div class="card shadow-sm">
-      <div class="card-header bg-white d-flex align-items-center justify-content-between">
-        <h5 class="mb-0 fw-semibold text-warning">
-          <i class="bi bi-box-arrow-in-right me-2"></i>Checked-In Drivers
-        </h5>
-        <span class="badge bg-warning text-dark rounded-pill">{{ checked_in_list|length }}</span>
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span style="font-size:14px;font-weight:600;">
+          <i class="bi bi-box-arrow-in-right me-2" style="color:var(--warn);"></i>Checked-In Drivers
+        </span>
+        <span class="badge bg-warning rounded-pill">{{ checked_in_list|length }}</span>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
@@ -206,7 +202,7 @@
                     <span class="badge bg-info">OB</span>
                   {% endif %}
                 </td>
-                <td>{{ appt.appt_time|time:"H:i" }}</td>
+                <td style="font-family:'JetBrains Mono',monospace;font-size:13px;">{{ appt.appt_time|time:"H:i" }}</td>
                 <td>{{ appt.customer.name }}</td>
                 <td>{{ appt.visit.visitor_name|default:"—" }}</td>
                 <td>
@@ -217,13 +213,13 @@
                   {% endif %}
                 </td>
                 <td>
-                  <span class="badge bg-warning text-dark">{{ appt.status }}</span>
+                  <span class="badge bg-warning">{{ appt.status }}</span>
                 </td>
               </tr>
               {% empty %}
               <tr>
-                <td colspan="6" class="text-center text-muted py-4">
-                  <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                <td colspan="6" class="text-center text-muted py-5">
+                  <i class="bi bi-inbox fs-2 d-block mb-2" style="opacity:.4;"></i>
                   No drivers currently checked in
                 </td>
               </tr>

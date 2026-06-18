@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Appointments - AMB Driver Log{% endblock %}
+{% block title %}Appointments - GXO Dock{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -134,7 +134,7 @@
                                 {% if appt.status == 'Scheduled' %}
                                     <span class="badge bg-secondary">Scheduled</span>
                                 {% elif appt.status == 'Checked In' %}
-                                    <span class="badge bg-warning text-dark">Checked In</span>
+                                    <span class="badge bg-warning">Checked In</span>
                                 {% elif appt.status == 'Completed' %}
                                     <span class="badge bg-success">Completed</span>
                                 {% elif appt.status == 'Late' %}
