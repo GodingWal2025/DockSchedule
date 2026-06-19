@@ -3,98 +3,155 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111110">
+  <meta name="theme-color" content="#1c1917">
   <title>{% block title %}GXO Dock{% endblock %}</title>
   {% load static %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <link href="{% static 'css/custom.css' %}" rel="stylesheet">
   {% block extra_css %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body>
 
-  <!-- Navigation -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
-        <img src="{% static 'img/gxo-logo.svg' %}" alt="GXO Logo" height="28" class="d-inline-block align-text-top">
-        <span style="font-size:16px;font-weight:700;letter-spacing:.04em;color:#fff;margin-left:10px;">
-          DOCK<span style="color:#e7372c;">SCHEDULE</span>
-        </span>
+  <!-- Mobile Header -->
+  <div class="mobile-header d-flex d-lg-none">
+    <a class="d-flex align-items-center text-decoration-none" href="{% url 'dashboard' %}">
+      <span class="sidebar-logo-text">GXO</span>
+      <span class="ms-2 fw-bold text-dark" style="font-size: 13px; letter-spacing: 0.05em; font-family: var(--font-sans);">DOCKSCHEDULE</span>
+    </a>
+    <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
+      <i class="bi bi-list fs-5"></i>
+    </button>
+  </div>
+
+  <!-- Responsive Sidebar Offcanvas -->
+  <div class="offcanvas-lg offcanvas-start sidebar" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
+    
+    <!-- Brand & Site Header inside Sidebar -->
+    <div class="sidebar-logo">
+      <a href="{% url 'dashboard' %}" class="text-decoration-none">
+        <span class="sidebar-logo-text">GXO</span>
       </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-              aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav me-auto">
-          <li class="nav-item">
-            <a class="nav-link {% block nav_dashboard %}{% endblock %}" href="{% url 'dashboard' %}">
-              <i class="bi bi-speedometer2 me-1"></i>Dashboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% block nav_add_appointment %}{% endblock %}" href="{% url 'add_appointment' %}">
-              <i class="bi bi-plus-circle me-1"></i>Add Appointment
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% block nav_appointment_list %}{% endblock %}" href="{% url 'appointment_list' %}">
-              <i class="bi bi-list-ul me-1"></i>Appointments
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% block nav_check_in %}{% endblock %}" href="{% url 'check_in' %}">
-              <i class="bi bi-box-arrow-in-right me-1"></i>Check-In
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% block nav_check_out %}{% endblock %}" href="{% url 'check_out' %}">
-              <i class="bi bi-box-arrow-left me-1"></i>Check-Out
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% block nav_kpi_export %}{% endblock %}" href="{% url 'kpi_export' %}">
-              <i class="bi bi-file-earmark-spreadsheet me-1"></i>KPI Export
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'pit_board' %}" target="_blank">
-              <i class="bi bi-forklift me-1"></i>PIT App
-            </a>
-          </li>
-        </ul>
-        <ul class="navbar-nav">
-          <li class="nav-item">
-            <a class="nav-link" href="/admin/" target="_blank">
-              <i class="bi bi-gear-fill me-1"></i>Admin
-            </a>
-          </li>
-        </ul>
+      <div class="sidebar-subtitle">Operations Hub</div>
+      <div class="sidebar-site">Bayer - Albert Lea</div>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="sidebar-content">
+      
+      <!-- SECTION MAIN -->
+      <div class="sidebar-section-heading">Main</div>
+      <nav class="sidebar-nav">
+        <a class="sidebar-link {% block nav_dashboard %}{% endblock %}" href="{% url 'dashboard' %}">
+          <i class="bi bi-house-door"></i>
+          <span>Home</span>
+        </a>
+        <a class="sidebar-link {% block nav_appointment_list %}{% endblock %}" href="{% url 'appointment_list' %}">
+          <i class="bi bi-list-ul"></i>
+          <span>Appointments</span>
+        </a>
+        <a class="sidebar-link {% block nav_add_appointment %}{% endblock %}" href="{% url 'add_appointment' %}">
+          <i class="bi bi-plus-circle"></i>
+          <span>Add Appointment</span>
+        </a>
+      </nav>
+
+      <!-- SECTION OPERATIONS -->
+      <div class="sidebar-section-heading">Operations</div>
+      <nav class="sidebar-nav">
+        <a class="sidebar-link {% block nav_check_in %}{% endblock %}" href="{% url 'check_in' %}">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <span>Check-In</span>
+        </a>
+        <a class="sidebar-link {% block nav_check_out %}{% endblock %}" href="{% url 'check_out' %}">
+          <i class="bi bi-box-arrow-left"></i>
+          <span>Check-Out</span>
+        </a>
+        <a class="sidebar-link {% block nav_kpi_export %}{% endblock %}" href="{% url 'kpi_export' %}">
+          <i class="bi bi-file-earmark-spreadsheet"></i>
+          <span>KPI Export</span>
+        </a>
+      </nav>
+
+      <!-- SECTION EXTERNAL -->
+      <div class="sidebar-section-heading">External</div>
+      <nav class="sidebar-nav">
+        <a class="sidebar-link" href="{% url 'pit_board' %}" target="_blank">
+          <i class="bi bi-forklift"></i>
+          <span>PIT App</span>
+          <i class="bi bi-box-arrow-up-right ms-auto" style="font-size: 10px; opacity: 0.5;"></i>
+        </a>
+        <a class="sidebar-link" href="/admin/" target="_blank">
+          <i class="bi bi-gear"></i>
+          <span>Admin</span>
+          <i class="bi bi-box-arrow-up-right ms-auto" style="font-size: 10px; opacity: 0.5;"></i>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Bottom Site info aligned -->
+    <div class="sidebar-footer">
+      <div class="fw-semibold text-dark mb-1" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Site</div>
+      <div class="text-dark" style="font-weight: 500; font-size: 13px;">Bayer - Albert Lea</div>
+      <div style="font-size: 11px; color: var(--ink-faint);">Active hub site</div>
+    </div>
+  </div>
+
+  <!-- Main Wrapper -->
+  <div class="main-wrapper">
+    
+    <!-- Main Content Panel -->
+    <main class="flex-grow-1 py-4 py-lg-5">
+      <div class="container-fluid">
+        {% block content %}{% endblock %}
       </div>
-    </div>
-  </nav>
+    </main>
 
-  <!-- Main Content -->
-  <main class="flex-grow-1 py-4">
-    <div class="container-fluid">
-      {% block content %}{% endblock %}
-    </div>
-  </main>
-
-  <!-- Footer -->
-  <footer class="border-top text-center py-3 mt-auto">
-    <div class="container">
-      <small class="text-muted" style="font-family:'Space Grotesk',sans-serif;font-size:11px;letter-spacing:.06em;text-transform:uppercase;">
-        GXO Dock&shy;Schedule &copy; {% now "Y" %}
-      </small>
-    </div>
-  </footer>
+    <!-- Footer inside main wrapper -->
+    <footer class="text-center py-3 mt-auto border-top" style="background: transparent !important; border-top: 1px solid var(--rule-soft) !important;">
+      <div class="container">
+        <small class="text-muted" style="font-family: var(--font-sans); font-size:11px; letter-spacing:.06em; text-transform:uppercase;">
+          GXO Dock&shy;Schedule &copy; {% now "Y" %}
+        </small>
+      </div>
+    </footer>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var currentPath = window.location.pathname;
+      var links = document.querySelectorAll(".sidebar-link");
+      var activeAdded = false;
+      
+      // Remove any existing active classes (clean slate)
+      links.forEach(function(link) {
+        link.classList.remove("active");
+      });
+
+      // 1. Try exact match first
+      links.forEach(function(link) {
+        var href = link.getAttribute("href");
+        if (href && currentPath === href) {
+          link.classList.add("active");
+          activeAdded = true;
+        }
+      });
+      
+      // 2. If no exact match, try prefix match (excluding root "/")
+      if (!activeAdded) {
+        links.forEach(function(link) {
+          var href = link.getAttribute("href");
+          if (href && href !== "/" && currentPath.startsWith(href)) {
+            link.classList.add("active");
+          }
+        });
+      }
+    });
+  </script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>
