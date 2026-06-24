@@ -64,7 +64,7 @@ class AzureSqlCursor:
     def lastrowid(self):
         self.cursor.execute("SELECT @@IDENTITY")
         row = self.cursor.fetchone()
-        return row[0] if row else None
+        return int(row[0]) if row and row[0] is not None else None
 
 class DatabaseConnection:
     def __init__(self):
