@@ -59,7 +59,7 @@ def get_appointment_stats(req: func.HttpRequest) -> func.HttpResponse:
         conn = get_db_connection()
         
         total = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status != 'Cancelled'", (date_str,)).fetchone()[0]
-        checked_in = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status = 'Checked In'", (date_str,)).fetchone()[0]
+        checked_in = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status IN ('Checked In', 'Early', 'On Time', 'Late')", (date_str,)).fetchone()[0]
         completed = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status = 'Completed'", (date_str,)).fetchone()[0]
         late = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status = 'Late'", (date_str,)).fetchone()[0]
         missed = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status = 'Missed'", (date_str,)).fetchone()[0]
@@ -158,8 +158,11 @@ def appointments(req: func.HttpRequest) -> func.HttpResponse:
             params.extend([like_val, like_val, like_val, like_val, like_val])
             
         if status_filter:
-            sql += " AND a.status = ?"
-            params.append(status_filter)
+            if status_filter == 'Checked In':
+                sql += " AND a.status IN ('Checked In', 'Early', 'On Time', 'Late')"
+            else:
+                sql += " AND a.status = ?"
+                params.append(status_filter)
             
         if appt_type:
             sql += " AND a.appt_type = ?"
@@ -530,3 +533,80 @@ def kpi_export(req: func.HttpRequest) -> func.HttpResponse:
             
     except Exception as e:
         return json_response({"error": str(e)}, status_code=500)
+
+# ─── 9. Admin Entities CRUD Endpoint ──────────────────────────────────────────
+@app.route(route="admin-entity", methods=["POST"])
+def admin_entity(req: func.HttpRequest) -> func.HttpResponse:
+    conn = get_db_connection()
+    try:
+        body = req.get_json()
+        entity = body.get("entity")
+        action = body.get("action", "add")
+        entity_id = body.get("id")
+
+        if not entity:
+            return json_response({"error": "Missing entity type"}, status_code=400)
+
+        # Map entities to tables
+        tables = {
+            "customer": "core_customer",
+            "carrier": "core_carrier",
+            "door": "core_door",
+            "operator": "core_pitoperator"
+        }
+        table_name = tables.get(entity)
+        if not table_name:
+            return json_response({"error": "Invalid entity type"}, status_code=400)
+
+        cursor = conn.cursor()
+
+        if action == "delete":
+            if not entity_id:
+                return json_response({"error": "Missing entity id for deletion"}, status_code=400)
+            # Soft delete by setting active = 0
+            cursor.execute(f"UPDATE {table_name} SET active = 0 WHERE id = ?", (entity_id,))
+            conn.commit()
+            conn.close()
+            return json_response({"success": True})
+
+        elif action == "add":
+            if entity == "customer" or entity == "carrier":
+                name = body.get("name")
+                if not name:
+                    return json_response({"error": "Missing name"}, status_code=400)
+                cursor.execute(f"INSERT INTO {table_name} (name, active) VALUES (?, 1)", (name,))
+            
+            elif entity == "door":
+                door_name = body.get("door_name")
+                area = body.get("area", "Main Dock")
+                direction = body.get("direction")
+                if not door_name or not direction:
+                    return json_response({"error": "Missing door name or direction"}, status_code=400)
+                cursor.execute(
+                    f"INSERT INTO {table_name} (door_name, area, direction, status, active) VALUES (?, ?, ?, 'Open', 1)",
+                    (door_name, area, direction)
+                )
+
+            elif entity == "operator":
+                name = body.get("name")
+                initials = body.get("initials")
+                if not name or not initials:
+                    return json_response({"error": "Missing name or initials"}, status_code=400)
+                cursor.execute(
+                    f"INSERT INTO {table_name} (name, initials, active) VALUES (?, ?, 1)",
+                    (name, initials)
+                )
+
+            conn.commit()
+            new_id = cursor.lastrowid
+            conn.close()
+            return json_response({"success": True, "id": new_id})
+
+        else:
+            return json_response({"error": "Invalid action"}, status_code=400)
+
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return json_response({"error": str(e)}, status_code=500)
+

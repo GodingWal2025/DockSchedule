@@ -71,6 +71,8 @@ async function handleRoute() {
             await renderKPIExport(appContainer);
         } else if (path === '#/pit-board') {
             await renderPITBoard(appContainer);
+        } else if (path === '#/admin') {
+            await renderAdmin(appContainer);
         } else {
             appContainer.innerHTML = '<div class="alert alert-danger">Page not found</div>';
         }
@@ -1106,6 +1108,215 @@ async function renderPITBoard(container) {
             }).join('');
         } else {
             grid.innerHTML = '<div class="col-12 alert alert-danger">Error loading PIT board.</div>';
+        }
+    }
+}
+
+// ─── Admin View ─────────────────────────────────────────────────────────────
+async function renderAdmin(container) {
+    // Refresh metadata first to ensure current state
+    await fetchMetadata();
+
+    container.innerHTML = `
+        <div class="row align-items-center mb-4">
+            <div class="col">
+                <span class="text-uppercase text-muted fw-bold" style="font-size: 11px; letter-spacing: 0.05em;">System Settings</span>
+                <h1 class="operations-header-serif"><i class="bi bi-gear me-2"></i>Administration Panel</h1>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- 1. Customers Management -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-dark text-white fw-bold">Manage Customers</div>
+                    <div class="card-body">
+                        <form id="add-customer-form" class="input-group mb-3">
+                            <input type="text" id="cust-name" class="form-control form-control-sm" placeholder="New Customer Name" required>
+                            <button type="submit" class="btn btn-sm btn-primary">Add</button>
+                        </form>
+                        <div style="max-height: 250px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush">
+                                ${state.metadata.customers.map(c => `
+                                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                        <span>${c.name}</span>
+                                        <button class="btn btn-sm btn-outline-danger py-0 px-1 delete-entity-btn" data-entity="customer" data-id="${c.id}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </li>
+                                `).join('')}
+                                ${state.metadata.customers.length === 0 ? '<li class="list-group-item text-muted text-center py-3">No customers</li>' : ''}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Carriers Management -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-dark text-white fw-bold">Manage Carriers</div>
+                    <div class="card-body">
+                        <form id="add-carrier-form" class="input-group mb-3">
+                            <input type="text" id="carr-name" class="form-control form-control-sm" placeholder="New Carrier Name" required>
+                            <button type="submit" class="btn btn-sm btn-primary">Add</button>
+                        </form>
+                        <div style="max-height: 250px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush">
+                                ${state.metadata.carriers.map(c => `
+                                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                        <span>${c.name}</span>
+                                        <button class="btn btn-sm btn-outline-danger py-0 px-1 delete-entity-btn" data-entity="carrier" data-id="${c.id}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </li>
+                                `).join('')}
+                                ${state.metadata.carriers.length === 0 ? '<li class="list-group-item text-muted text-center py-3">No carriers</li>' : ''}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Doors Management -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-dark text-white fw-bold">Manage Doors</div>
+                    <div class="card-body">
+                        <form id="add-door-form" class="row g-2 mb-3">
+                            <div class="col-6">
+                                <input type="text" id="door-name" class="form-control form-control-sm" placeholder="Door Name (e.g. Door 5)" required>
+                            </div>
+                            <div class="col-6">
+                                <select id="door-dir" class="form-select form-select-sm" required>
+                                    <option value="IB">Inbound</option>
+                                    <option value="OB">Outbound</option>
+                                    <option value="Both">Both</option>
+                                </select>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-sm btn-primary w-100">Add Door</button>
+                            </div>
+                        </form>
+                        <div style="max-height: 250px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush">
+                                ${state.metadata.doors.map(d => `
+                                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                        <div>
+                                            <strong>${d.door_name}</strong> 
+                                            <span class="badge bg-secondary ms-2">${d.direction}</span>
+                                            <span class="badge ${d.status === 'Open' ? 'bg-success' : 'bg-danger'} ms-1">${d.status}</span>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-danger py-0 px-1 delete-entity-btn" data-entity="door" data-id="${d.id}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </li>
+                                `).join('')}
+                                ${state.metadata.doors.length === 0 ? '<li class="list-group-item text-muted text-center py-3">No doors</li>' : ''}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. PIT Operators Management -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-dark text-white fw-bold">Manage PIT Operators</div>
+                    <div class="card-body">
+                        <form id="add-operator-form" class="row g-2 mb-3">
+                            <div class="col-8">
+                                <input type="text" id="op-name" class="form-control form-control-sm" placeholder="Operator Name" required>
+                            </div>
+                            <div class="col-4">
+                                <input type="text" id="op-initials" class="form-control form-control-sm" placeholder="Initials" required>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-sm btn-primary w-100">Add Operator</button>
+                            </div>
+                        </form>
+                        <div style="max-height: 250px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush">
+                                ${state.metadata.operators.map(op => `
+                                    <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                        <span>${op.name} (${op.initials})</span>
+                                        <button class="btn btn-sm btn-outline-danger py-0 px-1 delete-entity-btn" data-entity="operator" data-id="${op.id}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </li>
+                                `).join('')}
+                                ${state.metadata.operators.length === 0 ? '<li class="list-group-item text-muted text-center py-3">No operators</li>' : ''}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Event Handlers for forms
+    document.getElementById('add-customer-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('cust-name').value.trim();
+        await addEntity('customer', { name });
+    });
+
+    document.getElementById('add-carrier-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('carr-name').value.trim();
+        await addEntity('carrier', { name });
+    });
+
+    document.getElementById('add-door-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const door_name = document.getElementById('door-name').value.trim();
+        const direction = document.getElementById('door-dir').value;
+        await addEntity('door', { door_name, direction });
+    });
+
+    document.getElementById('add-operator-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('op-name').value.trim();
+        const initials = document.getElementById('op-initials').value.trim();
+        await addEntity('operator', { name, initials });
+    });
+
+    // Delete buttons setup
+    container.querySelectorAll('.delete-entity-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const entity = btn.getAttribute('data-entity');
+            const id = btn.getAttribute('data-id');
+            if (confirm(`Are you sure you want to delete this ${entity}?`)) {
+                await deleteEntity(entity, id);
+            }
+        });
+    });
+
+    async function addEntity(entity, payload) {
+        const res = await fetch(`${CONFIG.apiBase}/admin-entity`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ entity, action: 'add', ...payload })
+        });
+        if (res.ok) {
+            await renderAdmin(container);
+        } else {
+            const err = await res.json();
+            alert(`Failed to add: ${err.error || 'Unknown error'}`);
+        }
+    }
+
+    async function deleteEntity(entity, id) {
+        const res = await fetch(`${CONFIG.apiBase}/admin-entity`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ entity, action: 'delete', id: parseInt(id) })
+        });
+        if (res.ok) {
+            await renderAdmin(container);
+        } else {
+            const err = await res.json();
+            alert(`Failed to delete: ${err.error || 'Unknown error'}`);
         }
     }
 }
