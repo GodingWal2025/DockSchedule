@@ -55,6 +55,8 @@ class DatabaseConnection:
             # Standardize ADO.NET connection parameters for standard unixODBC compatibility
             conn_str = conn_str.replace("Encrypt=True", "Encrypt=yes").replace("Encrypt=False", "Encrypt=no")
             conn_str = conn_str.replace("encrypt=True", "encrypt=yes").replace("encrypt=False", "encrypt=no")
+            conn_str = conn_str.replace("TrustServerCertificate=True", "TrustServerCertificate=yes").replace("TrustServerCertificate=False", "TrustServerCertificate=no")
+            conn_str = conn_str.replace("trustServerCertificate=True", "trustServerCertificate=yes").replace("trustServerCertificate=False", "trustServerCertificate=no")
             if "Driver=" not in conn_str:
                 try:
                     # Try Driver 18 first
