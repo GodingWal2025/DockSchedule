@@ -130,10 +130,20 @@ class DatabaseConnection:
 def get_db_connection():
     return DatabaseConnection()
 
+import datetime
+import decimal
+
+def default_serializer(obj):
+    if isinstance(obj, (datetime.date, datetime.datetime)):
+        return obj.isoformat()
+    if isinstance(obj, decimal.Decimal):
+        return float(obj)
+    raise TypeError(f"Type {type(obj)} not serializable")
+
 # Helper: JSON response wrapper
 def json_response(data, status_code=200):
     return func.HttpResponse(
-        body=json.dumps(data),
+        body=json.dumps(data, default=default_serializer),
         mimetype="application/json",
         status_code=status_code,
         headers={
