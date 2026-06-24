@@ -7,6 +7,22 @@ import azure.functions as func
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 # ─── Database Wrapper for SQLite and Azure SQL Database ──────────────────────
+def translate_sqlite_to_mssql(sql):
+    sql_stripped = sql.strip()
+    sql_upper = sql_stripped.upper()
+    
+    if sql_upper.endswith("LIMIT 1"):
+        sql_no_limit = sql_stripped[:-7].strip()
+        if sql_upper.startswith("SELECT"):
+            return "SELECT TOP 1 " + sql_no_limit[6:].strip()
+            
+    elif sql_upper.endswith("LIMIT 100"):
+        sql_no_limit = sql_stripped[:-9].strip()
+        if sql_upper.startswith("SELECT"):
+            return "SELECT TOP 100 " + sql_no_limit[6:].strip()
+            
+    return sql_stripped
+
 class AzureSqlRow:
     def __init__(self, row, columns):
         self.row = row
@@ -23,6 +39,7 @@ class AzureSqlCursor:
         self.cursor = cursor
 
     def execute(self, sql, params=()):
+        sql = translate_sqlite_to_mssql(sql)
         self.cursor.execute(sql, params)
         return self
 
@@ -83,6 +100,7 @@ class DatabaseConnection:
 
     def execute(self, sql, params=()):
         if self.is_azure:
+            sql = translate_sqlite_to_mssql(sql)
             cursor = self.conn.cursor()
             cursor.execute(sql, params)
             return AzureSqlCursor(cursor)
