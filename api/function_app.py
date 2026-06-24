@@ -74,7 +74,7 @@ class DatabaseConnection:
             conn_str = conn_str.replace("encrypt=True", "encrypt=yes").replace("encrypt=False", "encrypt=no")
             conn_str = conn_str.replace("TrustServerCertificate=True", "TrustServerCertificate=yes").replace("TrustServerCertificate=False", "TrustServerCertificate=no")
             conn_str = conn_str.replace("trustServerCertificate=True", "trustServerCertificate=yes").replace("trustServerCertificate=False", "trustServerCertificate=no")
-            conn_str = conn_str.replace("User ID=", "UID=").replace("user id=", "uid=").replace("User ID =", "UID=")
+            conn_str = conn_str.replace("Initial Catalog=", "Database=").replace("User ID=", "UID=").replace("User ID =", "UID=")
             conn_str = conn_str.replace("Password=", "PWD=").replace("password=", "pwd=").replace("Password =", "PWD=")
             if "Driver=" not in conn_str:
                 try:
