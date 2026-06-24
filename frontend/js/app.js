@@ -1337,9 +1337,9 @@ async function renderAdmin(container) {
         }
     }
 }
-// --- PIT APP View --------------------------------------------------------
+// ─── PIT APP View ────────────────────────────────────────────────────────
 async function renderPITBoard(container) {
-    container.innerHTML = 
+    container.innerHTML = `
         <div class="row align-items-center mb-4">
             <div class="col">
                 <span class="text-uppercase text-muted fw-bold" style="font-size: 11px; letter-spacing: 0.05em;">PIT APP</span>
@@ -1368,14 +1368,14 @@ async function renderPITBoard(container) {
                     <div class="modal-body">
                         <select id="operator-select" class="form-select form-select-lg mb-3">
                             <option value="">-- Choose Operator --</option>
-                             + state.metadata.operators.map(o => <option value=" + o.id + "> + o.name + </option>).join('') + 
+                            ${state.metadata.operators.map(o => `<option value="${o.id}">${o.name}</option>`).join('')}
                         </select>
                         <button class="btn btn-primary w-100 py-2" id="btn-save-operator">Continue</button>
                     </div>
                 </div>
             </div>
         </div>
-    ;
+    `;
 
     const operatorModal = new bootstrap.Modal(document.getElementById('operatorModal'));
     
@@ -1427,40 +1427,40 @@ async function renderPITBoard(container) {
                 const isMine = t.operator_name === operatorName;
                 const statusBadge = t.status === 'In Progress' ? '<span class="badge bg-warning text-dark">In Progress</span>' : '<span class="badge bg-secondary">Pending</span>';
                 const actionBtn = t.status === 'Pending' 
-                    ? <button class="btn btn-primary btn-sm w-100 mt-2 btn-start-task" data-id="+t.id+" data-type="+(t.task_type==='Pick'?'Pick':'PIT')+">Start Task</button>
-                    : (isMine ? <button class="btn btn-success btn-sm w-100 mt-2 btn-complete-task" data-id="+t.id+" data-type="+(t.task_type==='Pick'?'Pick':'PIT')+">Complete Task</button> : <button class="btn btn-outline-secondary btn-sm w-100 mt-2" disabled>Started by +t.operator_name+</button>);
+                    ? `<button class="btn btn-primary btn-sm w-100 mt-2 btn-start-task" data-id="${t.id}" data-type="${t.task_type==='Pick'?'Pick':'PIT'}">Start Task</button>`
+                    : (isMine ? `<button class="btn btn-success btn-sm w-100 mt-2 btn-complete-task" data-id="${t.id}" data-type="${t.task_type==='Pick'?'Pick':'PIT'}">Complete Task</button>` : `<button class="btn btn-outline-secondary btn-sm w-100 mt-2" disabled>Started by ${t.operator_name}</button>`);
                 
-                return 
-                    <div class="card mb-2 shadow-sm  + (t.status === 'In Progress' ? (isMine ? 'border-primary' : 'border-warning') : '') + ">
+                return `
+                    <div class="card mb-2 shadow-sm ${t.status === 'In Progress' ? (isMine ? 'border-primary' : 'border-warning') : ''}">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between mb-2">
-                                <span class="fw-bold fs-6 mono"> + (t.pick_number || t.bol_shipment_no || 'No Ref') + </span>
-                                 + statusBadge + 
+                                <span class="fw-bold fs-6 mono">${t.pick_number || t.bol_shipment_no || 'No Ref'}</span>
+                                ${statusBadge}
                             </div>
-                            <div class="text-muted small mb-1"><i class="bi bi-building"></i>  + (t.customer || 'N/A') + </div>
-                            <div class="text-muted small mb-2"><i class="bi bi-box"></i>  + (t.product_type || t.product_info || 'N/A') + </div>
+                            <div class="text-muted small mb-1"><i class="bi bi-building"></i> ${t.customer || 'N/A'}</div>
+                            <div class="text-muted small mb-2"><i class="bi bi-box"></i> ${t.product_type || t.product_info || 'N/A'}</div>
                             <div class="d-flex justify-content-between align-items-center mt-3">
-                                <span class="badge bg-light text-dark border"> + (t.lane_name || t.from_location || 'Any Lane') + </span>
+                                <span class="badge bg-light text-dark border">${t.lane_name || t.from_location || 'Any Lane'}</span>
                             </div>
-                             + actionBtn + 
+                            ${actionBtn}
                         </div>
                     </div>
-                ;
+                `;
             };
             
-            const renderColumn = (title, tasks, colorClass) => 
+            const renderColumn = (title, tasks, colorClass) => `
                 <div class="col-12 col-md-6 col-xl-3">
                     <div class="card bg-light border-0 h-100">
-                        <div class="card-header border-0  + colorClass +  text-white py-3 fw-bold d-flex justify-content-between">
-                            <span> + title + </span>
-                            <span class="badge bg-white text-dark rounded-pill"> + tasks.length + </span>
+                        <div class="card-header border-0 ${colorClass} text-white py-3 fw-bold d-flex justify-content-between">
+                            <span>${title}</span>
+                            <span class="badge bg-white text-dark rounded-pill">${tasks.length}</span>
                         </div>
                         <div class="card-body p-2" style="max-height: 70vh; overflow-y: auto;">
-                             + (tasks.length === 0 ? '<div class="text-center text-muted py-4 small">No tasks</div>' : tasks.map(renderTaskCard).join('')) + 
+                            ${tasks.length === 0 ? '<div class="text-center text-muted py-4 small">No tasks</div>' : tasks.map(renderTaskCard).join('')}
                         </div>
                     </div>
                 </div>
-            ;
+            `;
             
             board.innerHTML = 
                 renderColumn('Inbound Unload', ibTasks, 'bg-primary') +
