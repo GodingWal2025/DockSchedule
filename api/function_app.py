@@ -160,11 +160,11 @@ def get_metadata(req: func.HttpRequest) -> func.HttpResponse:
     try:
         conn = get_db_connection()
         
-        customers = [dict(r) for r in conn.execute("SELECT id, name FROM core_customer WHERE active = 1 ORDER BY name")]
-        carriers = [dict(r) for r in conn.execute("SELECT id, name FROM core_carrier WHERE active = 1 ORDER BY name")]
-        product_types = [dict(r) for r in conn.execute("SELECT id, name FROM core_producttype WHERE active = 1 ORDER BY name")]
-        doors = [dict(r) for r in conn.execute("SELECT id, door_name, direction, status FROM core_door WHERE active = 1 ORDER BY door_name")]
-        operators = [dict(r) for r in conn.execute("SELECT id, name, initials FROM core_pitoperator WHERE active = 1 ORDER BY name")]
+        customers = [dict(r) for r in conn.execute("SELECT id, name FROM dbo.core_customer WHERE active = 1 ORDER BY name")]
+        carriers = [dict(r) for r in conn.execute("SELECT id, name FROM dbo.core_carrier WHERE active = 1 ORDER BY name")]
+        product_types = [dict(r) for r in conn.execute("SELECT id, name FROM dbo.core_producttype WHERE active = 1 ORDER BY name")]
+        doors = [dict(r) for r in conn.execute("SELECT id, door_name, direction, status FROM dbo.core_door WHERE active = 1 ORDER BY door_name")]
+        operators = [dict(r) for r in conn.execute("SELECT id, name, initials FROM dbo.core_pitoperator WHERE active = 1 ORDER BY name")]
         
         conn.close()
         
@@ -190,14 +190,14 @@ def get_appointment_stats(req: func.HttpRequest) -> func.HttpResponse:
             
         conn = get_db_connection()
         
-        total = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status != 'Cancelled'", (date_str,)).fetchone()[0]
-        checked_in = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status IN ('Checked In', 'Early', 'On Time', 'Late')", (date_str,)).fetchone()[0]
-        completed = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status = 'Completed'", (date_str,)).fetchone()[0]
-        late = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status = 'Late'", (date_str,)).fetchone()[0]
-        missed = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND status = 'Missed'", (date_str,)).fetchone()[0]
+        total = conn.execute("SELECT COUNT(*) FROM dbo.core_appointment WHERE appt_date = ? AND status != 'Cancelled'", (date_str,)).fetchone()[0]
+        checked_in = conn.execute("SELECT COUNT(*) FROM dbo.core_appointment WHERE appt_date = ? AND status IN ('Checked In', 'Early', 'On Time', 'Late')", (date_str,)).fetchone()[0]
+        completed = conn.execute("SELECT COUNT(*) FROM dbo.core_appointment WHERE appt_date = ? AND status = 'Completed'", (date_str,)).fetchone()[0]
+        late = conn.execute("SELECT COUNT(*) FROM dbo.core_appointment WHERE appt_date = ? AND status = 'Late'", (date_str,)).fetchone()[0]
+        missed = conn.execute("SELECT COUNT(*) FROM dbo.core_appointment WHERE appt_date = ? AND status = 'Missed'", (date_str,)).fetchone()[0]
         
-        ib_count = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND appt_type = 'IB' AND status != 'Cancelled'", (date_str,)).fetchone()[0]
-        ob_count = conn.execute("SELECT COUNT(*) FROM core_appointment WHERE appt_date = ? AND appt_type = 'OB' AND status != 'Cancelled'", (date_str,)).fetchone()[0]
+        ib_count = conn.execute("SELECT COUNT(*) FROM dbo.core_appointment WHERE appt_date = ? AND appt_type = 'IB' AND status != 'Cancelled'", (date_str,)).fetchone()[0]
+        ob_count = conn.execute("SELECT COUNT(*) FROM dbo.core_appointment WHERE appt_date = ? AND appt_type = 'OB' AND status != 'Cancelled'", (date_str,)).fetchone()[0]
         
         conn.close()
         
@@ -244,7 +244,7 @@ def appointments(req: func.HttpRequest) -> func.HttpResponse:
             
             cursor = conn.cursor()
             cursor.execute(
-                """INSERT INTO core_appointment 
+                """INSERT INTO dbo.core_appointment 
                    (appt_type, appt_date, appt_time, scheduled_datetime, bol_shipment_no, delivery_no, status, notes, created_at, updated_at, carrier_id, customer_id, product_type_id, created_by, cancelled_reason)
                    VALUES (?, ?, ?, ?, ?, ?, 'Scheduled', ?, ?, ?, ?, ?, ?, '', '')""",
                 (appt_type, appt_date, appt_time, scheduled_datetime, bol_shipment_no, delivery_no, notes, created_at, updated_at, carrier_id, customer_id, product_type_id)
@@ -274,13 +274,13 @@ def appointments(req: func.HttpRequest) -> func.HttpResponse:
                    carr.name as carrier, 
                    pt.name as product_type,
                    v.visitor_name, v.trailer_no, v.check_in_time, v.check_out_time, v.dwell_seconds, d.door_name, op.name as pit_operator
-            FROM core_appointment a
-            LEFT JOIN core_customer cust ON a.customer_id = cust.id
-            LEFT JOIN core_carrier carr ON a.carrier_id = carr.id
-            LEFT JOIN core_producttype pt ON a.product_type_id = pt.id
-            LEFT JOIN core_drivervisit v ON a.id = v.appointment_id
-            LEFT JOIN core_door d ON v.assigned_door_id = d.id
-            LEFT JOIN core_pitoperator op ON v.pit_operator_id = op.id
+            FROM dbo.core_appointment a
+            LEFT JOIN dbo.core_customer cust ON a.customer_id = cust.id
+            LEFT JOIN dbo.core_carrier carr ON a.carrier_id = carr.id
+            LEFT JOIN dbo.core_producttype pt ON a.product_type_id = pt.id
+            LEFT JOIN dbo.core_drivervisit v ON a.id = v.appointment_id
+            LEFT JOIN dbo.core_door d ON v.assigned_door_id = d.id
+            LEFT JOIN dbo.core_pitoperator op ON v.pit_operator_id = op.id
             WHERE 1=1
         """
         params = []
@@ -333,7 +333,7 @@ def check_bol(req: func.HttpRequest) -> func.HttpResponse:
             
         conn = get_db_connection()
         row = conn.execute(
-            "SELECT id FROM core_appointment WHERE bol_shipment_no = ? AND status != 'Cancelled' LIMIT 1",
+            "SELECT id FROM dbo.core_appointment WHERE bol_shipment_no = ? AND status != 'Cancelled' LIMIT 1",
             (bol,)
         ).fetchone()
         conn.close()
@@ -364,7 +364,7 @@ def capacity_check(req: func.HttpRequest) -> func.HttpResponse:
         
         # Find capacity rule
         rule_row = conn.execute(
-            """SELECT max_appointments FROM core_capacityrule 
+            """SELECT max_appointments FROM dbo.core_capacityrule 
                WHERE day_of_week = ? AND time_slot LIKE ? AND appt_type IN (?, 'Both') AND active = 1 LIMIT 1""",
             (day_of_week, f"{time_str}%", appt_type)
         ).fetchone()
@@ -373,7 +373,7 @@ def capacity_check(req: func.HttpRequest) -> func.HttpResponse:
         
         # Count existing scheduled/checked-in
         existing = conn.execute(
-            """SELECT COUNT(*) FROM core_appointment 
+            """SELECT COUNT(*) FROM dbo.core_appointment 
                WHERE appt_date = ? AND appt_time LIKE ? AND appt_type = ? AND status != 'Cancelled'""",
             (date_str, f"{time_str}%", appt_type)
         ).fetchone()[0]
@@ -410,7 +410,7 @@ def check_in(req: func.HttpRequest) -> func.HttpResponse:
             return json_response({"error": "Missing appointment_id"}, status_code=400)
             
         # Get appointment details to calculate check-in status (Early/On Time/Late)
-        appt = conn.execute("SELECT scheduled_datetime FROM core_appointment WHERE id = ?", (appt_id,)).fetchone()
+        appt = conn.execute("SELECT scheduled_datetime FROM dbo.core_appointment WHERE id = ?", (appt_id,)).fetchone()
         if not appt:
             return json_response({"error": "Appointment not found"}, status_code=404)
             
@@ -430,7 +430,7 @@ def check_in(req: func.HttpRequest) -> func.HttpResponse:
             
         # Insert DriverVisit record
         conn.execute(
-            """INSERT INTO core_drivervisit 
+            """INSERT INTO dbo.core_drivervisit 
                (visitor_name, trailer_no, drivers_license_state, load_lock, check_in_time, check_out_time, in_out_status, notes, appointment_id, assigned_door_id, pit_operator_id)
                VALUES (?, ?, ?, ?, ?, NULL, 'In', ?, ?, ?, ?)""",
             (visitor_name, trailer_no, drivers_license_state, load_lock, check_in_time_str, notes, appt_id, assigned_door_id, pit_operator_id)
@@ -438,14 +438,14 @@ def check_in(req: func.HttpRequest) -> func.HttpResponse:
         
         # Update Appointment status
         conn.execute(
-            "UPDATE core_appointment SET status = ? WHERE id = ?",
+            "UPDATE dbo.core_appointment SET status = ? WHERE id = ?",
             (new_status, appt_id)
         )
         
         # Update Door status to Occupied
         if assigned_door_id:
             conn.execute(
-                "UPDATE core_door SET status = 'Occupied' WHERE id = ?",
+                "UPDATE dbo.core_door SET status = 'Occupied' WHERE id = ?",
                 (assigned_door_id,)
             )
             
@@ -473,7 +473,7 @@ def check_out(req: func.HttpRequest) -> func.HttpResponse:
             
         # Find driver visit matching checked-in appointment
         visit = conn.execute(
-            "SELECT id, check_in_time, assigned_door_id FROM core_drivervisit WHERE appointment_id = ? AND in_out_status = 'In'", 
+            "SELECT id, check_in_time, assigned_door_id FROM dbo.core_drivervisit WHERE appointment_id = ? AND in_out_status = 'In'", 
             (appt_id,)
         ).fetchone()
         
@@ -489,7 +489,7 @@ def check_out(req: func.HttpRequest) -> func.HttpResponse:
         
         # Update DriverVisit record
         conn.execute(
-            """UPDATE core_drivervisit 
+            """UPDATE dbo.core_drivervisit 
                SET check_out_time = ?, dwell_seconds = ?, in_out_status = 'Out', notes = COALESCE(notes || '\n' || ?, ?)
                WHERE id = ?""",
             (check_out_time_str, dwell_seconds, notes, notes, visit["id"])
@@ -497,14 +497,14 @@ def check_out(req: func.HttpRequest) -> func.HttpResponse:
         
         # Update Appointment status to Completed
         conn.execute(
-            "UPDATE core_appointment SET status = 'Completed' WHERE id = ?",
+            "UPDATE dbo.core_appointment SET status = 'Completed' WHERE id = ?",
             (appt_id,)
         )
         
         # Free up assigned door
         if visit["assigned_door_id"]:
             conn.execute(
-                "UPDATE core_door SET status = 'Open' WHERE id = ?",
+                "UPDATE dbo.core_door SET status = 'Open' WHERE id = ?",
                 (visit["assigned_door_id"],)
             )
             
@@ -548,13 +548,13 @@ def kpi_export(req: func.HttpRequest) -> func.HttpResponse:
                    pt.name as product_type,
                    v.visitor_name, v.trailer_no, v.check_in_time, v.check_out_time, v.dwell_seconds, v.load_lock, v.in_out_status, v.notes as visit_notes,
                    d.door_name, op.name as pit_operator
-            FROM core_appointment a
-            LEFT JOIN core_customer cust ON a.customer_id = cust.id
-            LEFT JOIN core_carrier carr ON a.carrier_id = carr.id
-            LEFT JOIN core_producttype pt ON a.product_type_id = pt.id
-            LEFT JOIN core_drivervisit v ON a.id = v.appointment_id
-            LEFT JOIN core_door d ON v.assigned_door_id = d.id
-            LEFT JOIN core_pitoperator op ON v.pit_operator_id = op.id
+            FROM dbo.core_appointment a
+            LEFT JOIN dbo.core_customer cust ON a.customer_id = cust.id
+            LEFT JOIN dbo.core_carrier carr ON a.carrier_id = carr.id
+            LEFT JOIN dbo.core_producttype pt ON a.product_type_id = pt.id
+            LEFT JOIN dbo.core_drivervisit v ON a.id = v.appointment_id
+            LEFT JOIN dbo.core_door d ON v.assigned_door_id = d.id
+            LEFT JOIN dbo.core_pitoperator op ON v.pit_operator_id = op.id
             WHERE a.appt_date >= ? AND a.appt_date <= ?
         """
         params = [date_from, date_to]
@@ -695,10 +695,10 @@ def admin_entity(req: func.HttpRequest) -> func.HttpResponse:
 
         # Map entities to tables
         tables = {
-            "customer": "core_customer",
-            "carrier": "core_carrier",
-            "door": "core_door",
-            "operator": "core_pitoperator"
+            "customer": "dbo.core_customer",
+            "carrier": "dbo.core_carrier",
+            "door": "dbo.core_door",
+            "operator": "dbo.core_pitoperator"
         }
         table_name = tables.get(entity)
         if not table_name:
