@@ -434,7 +434,9 @@ def check_in(req: func.HttpRequest) -> func.HttpResponse:
         check_in_time_str = check_in_time.strftime("%Y-%m-%d %H:%M:%S.%f")
         
         # Calculate status
-        scheduled_dt = datetime.datetime.strptime(appt["scheduled_datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
+        scheduled_dt = appt["scheduled_datetime"]
+        if isinstance(scheduled_dt, str):
+            scheduled_dt = datetime.datetime.strptime(scheduled_dt.split(".")[0], "%Y-%m-%d %H:%M:%S")
         diff = (check_in_time - scheduled_dt).total_seconds() / 60.0
         
         if diff < -15:
@@ -500,7 +502,9 @@ def check_out(req: func.HttpRequest) -> func.HttpResponse:
         check_out_time_str = check_out_time.strftime("%Y-%m-%d %H:%M:%S.%f")
         
         # Dwell time calculation
-        check_in_dt = datetime.datetime.strptime(visit["check_in_time"].split(".")[0], "%Y-%m-%d %H:%M:%S")
+        check_in_dt = visit["check_in_time"]
+        if isinstance(check_in_dt, str):
+            check_in_dt = datetime.datetime.strptime(check_in_dt.split(".")[0], "%Y-%m-%d %H:%M:%S")
         dwell_seconds = int((check_out_time - check_in_dt).total_seconds())
         
         # Update DriverVisit record
@@ -608,7 +612,7 @@ def kpi_export(req: func.HttpRequest) -> func.HttpResponse:
             def fmt_dt(dt_str):
                 if not dt_str: return ""
                 try:
-                    dt = datetime.datetime.strptime(dt_str.split(".")[0], "%Y-%m-%d %H:%M:%S")
+                    dt = dt_str if not isinstance(dt_str, str) else datetime.datetime.strptime(dt_str.split(".")[0], "%Y-%m-%d %H:%M:%S")
                     # Excel expects format: M/D/YYYY H:MM AM/PM
                     return dt.strftime("%m/%d/%Y %I:%M %p").replace(" 0", " ")
                 except:
@@ -636,7 +640,7 @@ def kpi_export(req: func.HttpRequest) -> func.HttpResponse:
                 except:
                     pass
                     
-            appt_date_obj = datetime.datetime.strptime(r["appt_date"], "%Y-%m-%d")
+            appt_date_obj = r["appt_date"] if not isinstance(r["appt_date"], str) else datetime.datetime.strptime(r["appt_date"], "%Y-%m-%d").date()
             
             export_row = [
                 r["appt_type"],
