@@ -6,15 +6,88 @@ import azure.functions as func
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
-# Database connection helper
+# ─── Database Wrapper for SQLite and Azure SQL Database ──────────────────────
+class AzureSqlRow:
+    def __init__(self, row, columns):
+        self.row = row
+        self.columns = columns
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self.row[key]
+        return self.row[self.columns[key]]
+    def keys(self):
+        return list(self.columns.keys())
+
+class AzureSqlCursor:
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def execute(self, sql, params=()):
+        self.cursor.execute(sql, params)
+        return self
+
+    def fetchone(self):
+        row = self.cursor.fetchone()
+        if not row:
+            return None
+        columns = {desc[0]: i for i, desc in enumerate(self.cursor.description)}
+        return AzureSqlRow(row, columns)
+
+    def fetchall(self):
+        rows = self.cursor.fetchall()
+        if not rows:
+            return []
+        columns = {desc[0]: i for i, desc in enumerate(self.cursor.description)}
+        return [AzureSqlRow(r, columns) for r in rows]
+
+    @property
+    def lastrowid(self):
+        self.cursor.execute("SELECT @@IDENTITY")
+        row = self.cursor.fetchone()
+        return row[0] if row else None
+
+class DatabaseConnection:
+    def __init__(self):
+        conn_str = os.environ.get("DB_CONNECTION") or os.environ.get("SQLAZURECONNSTR_DB_CONNECTION")
+        self.is_azure = conn_str is not None
+        if self.is_azure:
+            import pyodbc
+            self.conn = pyodbc.connect(conn_str, autocommit=True)
+        else:
+            db_path = os.environ.get("DB_PATH", "../db.sqlite3")
+            if not os.path.isabs(db_path):
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                db_path = os.path.normpath(os.path.join(current_dir, db_path))
+            self.conn = sqlite3.connect(db_path)
+            self.conn.row_factory = sqlite3.Row
+
+    def execute(self, sql, params=()):
+        if self.is_azure:
+            cursor = self.conn.cursor()
+            cursor.execute(sql, params)
+            return AzureSqlCursor(cursor)
+        else:
+            return self.conn.execute(sql, params)
+
+    def cursor(self):
+        if self.is_azure:
+            return AzureSqlCursor(self.conn.cursor())
+        else:
+            return self.conn.cursor()
+
+    def commit(self):
+        if not self.is_azure:
+            self.conn.commit()
+
+    def rollback(self):
+        if not self.is_azure:
+            self.conn.rollback()
+
+    def close(self):
+        self.conn.close()
+
 def get_db_connection():
-    db_path = os.environ.get("DB_PATH", "../db.sqlite3")
-    if not os.path.isabs(db_path):
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        db_path = os.path.normpath(os.path.join(current_dir, db_path))
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return DatabaseConnection()
 
 # Helper: JSON response wrapper
 def json_response(data, status_code=200):
