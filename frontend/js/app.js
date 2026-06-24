@@ -4,6 +4,23 @@ const CONFIG = {
     apiBase: '/api'
 };
 
+// Automatic API Key injection for outgoing requests
+const originalFetch = window.fetch;
+window.fetch = async function (url, options = {}) {
+    if (typeof url === 'string' && (url.startsWith('/api') || url.startsWith(CONFIG.apiBase))) {
+        options.headers = options.headers || {};
+        const apiKey = localStorage.getItem('api_key') || '';
+        if (apiKey) {
+            if (options.headers instanceof Headers) {
+                options.headers.set('X-API-Key', apiKey);
+            } else {
+                options.headers['X-API-Key'] = apiKey;
+            }
+        }
+    }
+    return originalFetch(url, options);
+};
+
 // Global state
 let state = {
     currentPath: '#/',

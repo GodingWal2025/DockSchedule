@@ -94,12 +94,31 @@ def json_response(data, status_code=200):
     return func.HttpResponse(
         body=json.dumps(data),
         mimetype="application/json",
-        status_code=status_code
+        status_code=status_code,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE, PUT",
+            "Access-Control-Allow-Headers": "Content-Type, X-API-Key"
+        }
     )
 
+# Helper: Validate X-API-Key if configured on server
+def verify_request(req: func.HttpRequest) -> bool:
+    if req.method == 'OPTIONS':
+        return True
+    expected_key = os.environ.get("API_KEY")
+    if expected_key:
+        provided_key = req.headers.get("X-API-Key")
+        if provided_key != expected_key:
+            return False
+    return True
+
+
 # ─── 1. Metadata Lookup Endpoint ─────────────────────────────────────────────
-@app.route(route="meta-data", methods=["GET"])
+@app.route(route="meta-data", methods=["GET", "OPTIONS"])
 def get_metadata(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
     try:
         conn = get_db_connection()
         
@@ -122,8 +141,10 @@ def get_metadata(req: func.HttpRequest) -> func.HttpResponse:
         return json_response({"error": str(e)}, status_code=500)
 
 # ─── 2. Appointment Stats Endpoint ───────────────────────────────────────────
-@app.route(route="appointment-stats", methods=["GET"])
+@app.route(route="appointment-stats", methods=["GET", "OPTIONS"])
 def get_appointment_stats(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
     try:
         date_str = req.params.get("date")
         if not date_str:
@@ -155,8 +176,10 @@ def get_appointment_stats(req: func.HttpRequest) -> func.HttpResponse:
         return json_response({"error": str(e)}, status_code=500)
 
 # ─── 3. Appointments List / Search Endpoint ──────────────────────────────────
-@app.route(route="appointments", methods=["GET", "POST"])
+@app.route(route="appointments", methods=["GET", "POST", "OPTIONS"])
 def appointments(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
     conn = get_db_connection()
     
     # POST - Create Appointment
@@ -261,8 +284,10 @@ def appointments(req: func.HttpRequest) -> func.HttpResponse:
         return json_response({"error": str(e)}, status_code=500)
 
 # ─── 4. Check BOL Number Endpoint ────────────────────────────────────────────
-@app.route(route="check-bol", methods=["GET"])
+@app.route(route="check-bol", methods=["GET", "OPTIONS"])
 def check_bol(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
     try:
         bol = req.params.get("bol", "").strip()
         if not bol:
@@ -280,8 +305,10 @@ def check_bol(req: func.HttpRequest) -> func.HttpResponse:
         return json_response({"error": str(e)}, status_code=500)
 
 # ─── 5. Slot Capacity Check Endpoint ─────────────────────────────────────────
-@app.route(route="capacity-check", methods=["GET"])
+@app.route(route="capacity-check", methods=["GET", "OPTIONS"])
 def capacity_check(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
     try:
         date_str = req.params.get("date")
         time_str = req.params.get("time")
@@ -325,8 +352,10 @@ def capacity_check(req: func.HttpRequest) -> func.HttpResponse:
         return json_response({"error": str(e)}, status_code=500)
 
 # ─── 6. Check-In Endpoint ────────────────────────────────────────────────────
-@app.route(route="check-in", methods=["POST"])
+@app.route(route="check-in", methods=["POST", "OPTIONS"])
 def check_in(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
     conn = get_db_connection()
     try:
         body = req.get_json()
@@ -391,8 +420,10 @@ def check_in(req: func.HttpRequest) -> func.HttpResponse:
         return json_response({"error": str(e)}, status_code=500)
 
 # ─── 7. Check-Out Endpoint ───────────────────────────────────────────────────
-@app.route(route="check-out", methods=["POST"])
+@app.route(route="check-out", methods=["POST", "OPTIONS"])
 def check_out(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
     conn = get_db_connection()
     try:
         body = req.get_json()
@@ -455,8 +486,10 @@ EXPORT_COLUMNS = [
     "Color_Coding", "Appt_Day", "Appt_Slot", "Appt_Month", "Appt_Year"
 ]
 
-@app.route(route="kpi-export", methods=["GET"])
+@app.route(route="kpi-export", methods=["GET", "OPTIONS"])
 def kpi_export(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
     try:
         date_from = req.params.get("date_from", "")
         date_to = req.params.get("date_to", "")
@@ -608,8 +641,10 @@ def kpi_export(req: func.HttpRequest) -> func.HttpResponse:
         return json_response({"error": str(e)}, status_code=500)
 
 # ─── 9. Admin Entities CRUD Endpoint ──────────────────────────────────────────
-@app.route(route="admin-entity", methods=["POST"])
+@app.route(route="admin-entity", methods=["POST", "OPTIONS"])
 def admin_entity(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
     conn = get_db_connection()
     try:
         body = req.get_json()
