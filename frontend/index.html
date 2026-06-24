@@ -4,21 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#1c1917">
-  <title>{% block title %}GXO Dock{% endblock %}</title>
-  {% load static %}
+  <title>GXO Dock - Operations Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="{% static 'css/custom.css' %}" rel="stylesheet">
-  {% block extra_css %}{% endblock %}
+  <link href="css/custom.css" rel="stylesheet">
 </head>
 <body>
 
   <!-- Mobile Header -->
   <div class="mobile-header d-flex d-lg-none">
-    <a class="d-flex align-items-center text-decoration-none" href="{% url 'dashboard' %}">
+    <a class="d-flex align-items-center text-decoration-none" href="#/">
       <span class="sidebar-logo-text">GXO</span>
       <span class="ms-2 fw-bold text-dark" style="font-size: 13px; letter-spacing: 0.05em; font-family: var(--font-sans);">DOCKSCHEDULE</span>
     </a>
@@ -32,7 +30,7 @@
     
     <!-- Brand & Site Header inside Sidebar -->
     <div class="sidebar-logo">
-      <a href="{% url 'dashboard' %}" class="text-decoration-none">
+      <a href="#/" class="text-decoration-none">
         <span class="sidebar-logo-text">GXO</span>
       </a>
       <div class="sidebar-subtitle">Operations Hub</div>
@@ -45,15 +43,15 @@
       <!-- SECTION MAIN -->
       <div class="sidebar-section-heading">Main</div>
       <nav class="sidebar-nav">
-        <a class="sidebar-link {% block nav_dashboard %}{% endblock %}" href="{% url 'dashboard' %}">
+        <a class="sidebar-link" href="#/" id="nav-home">
           <i class="bi bi-house-door"></i>
           <span>Home</span>
         </a>
-        <a class="sidebar-link {% block nav_appointment_list %}{% endblock %}" href="{% url 'appointment_list' %}">
+        <a class="sidebar-link" href="#/appointments" id="nav-appointments">
           <i class="bi bi-list-ul"></i>
           <span>Appointments</span>
         </a>
-        <a class="sidebar-link {% block nav_add_appointment %}{% endblock %}" href="{% url 'add_appointment' %}">
+        <a class="sidebar-link" href="#/add-appointment" id="nav-add-appointment">
           <i class="bi bi-plus-circle"></i>
           <span>Add Appointment</span>
         </a>
@@ -62,15 +60,15 @@
       <!-- SECTION OPERATIONS -->
       <div class="sidebar-section-heading">Operations</div>
       <nav class="sidebar-nav">
-        <a class="sidebar-link {% block nav_check_in %}{% endblock %}" href="{% url 'check_in' %}">
+        <a class="sidebar-link" href="#/check-in" id="nav-check-in">
           <i class="bi bi-box-arrow-in-right"></i>
           <span>Check-In</span>
         </a>
-        <a class="sidebar-link {% block nav_check_out %}{% endblock %}" href="{% url 'check_out' %}">
+        <a class="sidebar-link" href="#/check-out" id="nav-check-out">
           <i class="bi bi-box-arrow-left"></i>
           <span>Check-Out</span>
         </a>
-        <a class="sidebar-link {% block nav_kpi_export %}{% endblock %}" href="{% url 'kpi_export' %}">
+        <a class="sidebar-link" href="#/kpi-export" id="nav-kpi-export">
           <i class="bi bi-file-earmark-spreadsheet"></i>
           <span>KPI Export</span>
         </a>
@@ -79,12 +77,11 @@
       <!-- SECTION EXTERNAL -->
       <div class="sidebar-section-heading">External</div>
       <nav class="sidebar-nav">
-        <a class="sidebar-link" href="{% url 'pit_board' %}" target="_blank">
+        <a class="sidebar-link" href="#/pit-board" id="nav-pit-board">
           <i class="bi bi-forklift"></i>
           <span>PIT App</span>
-          <i class="bi bi-box-arrow-up-right ms-auto" style="font-size: 10px; opacity: 0.5;"></i>
         </a>
-        <a class="sidebar-link" href="/admin/" target="_blank">
+        <a class="sidebar-link" href="/admin/" target="_blank" id="nav-admin">
           <i class="bi bi-gear"></i>
           <span>Admin</span>
           <i class="bi bi-box-arrow-up-right ms-auto" style="font-size: 10px; opacity: 0.5;"></i>
@@ -105,8 +102,8 @@
     
     <!-- Main Content Panel -->
     <main class="flex-grow-1 py-4 py-lg-5">
-      <div class="container-fluid">
-        {% block content %}{% endblock %}
+      <div class="container-fluid" id="app">
+        <!-- SPA views will be injected here dynamically -->
       </div>
     </main>
 
@@ -114,44 +111,13 @@
     <footer class="text-center py-3 mt-auto border-top" style="background: transparent !important; border-top: 1px solid var(--rule-soft) !important;">
       <div class="container">
         <small class="text-muted" style="font-family: var(--font-sans); font-size:11px; letter-spacing:.06em; text-transform:uppercase;">
-          GXO Dock&shy;Schedule &copy; {% now "Y" %}
+          GXO Dock Schedule &copy; 2026
         </small>
       </div>
     </footer>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      var currentPath = window.location.pathname;
-      var links = document.querySelectorAll(".sidebar-link");
-      var activeAdded = false;
-      
-      // Remove any existing active classes (clean slate)
-      links.forEach(function(link) {
-        link.classList.remove("active");
-      });
-
-      // 1. Try exact match first
-      links.forEach(function(link) {
-        var href = link.getAttribute("href");
-        if (href && currentPath === href) {
-          link.classList.add("active");
-          activeAdded = true;
-        }
-      });
-      
-      // 2. If no exact match, try prefix match (excluding root "/")
-      if (!activeAdded) {
-        links.forEach(function(link) {
-          var href = link.getAttribute("href");
-          if (href && href !== "/" && currentPath.startsWith(href)) {
-            link.classList.add("active");
-          }
-        });
-      }
-    });
-  </script>
-  {% block extra_js %}{% endblock %}
+  <script src="js/app.js"></script>
 </body>
 </html>
