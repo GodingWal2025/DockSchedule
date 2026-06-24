@@ -50,6 +50,9 @@ class AzureSqlCursor:
         columns = {desc[0]: i for i, desc in enumerate(self.cursor.description)}
         return AzureSqlRow(row, columns)
 
+    def __iter__(self):
+        return iter(self.fetchall())
+
     def fetchall(self):
         rows = self.cursor.fetchall()
         if not rows:
