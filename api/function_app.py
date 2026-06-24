@@ -788,7 +788,7 @@ def pit_tasks(req: func.HttpRequest) -> func.HttpResponse:
     try:
         # Get pending/in-progress tasks
         # For PITTask
-        sql_pit = \"\"\"
+        sql_pit = """
             SELECT p.id, p.task_type, p.status, p.product_info, p.notes, 
                    p.created_at, p.started_at, p.appointment_id,
                    a.appt_type, a.bol_shipment_no, c.name as customer,
@@ -800,11 +800,11 @@ def pit_tasks(req: func.HttpRequest) -> func.HttpResponse:
             LEFT JOIN dbo.pit_staginglane sl ON p.staging_lane_id = sl.id
             WHERE p.status IN ('Pending', 'In Progress')
             ORDER BY p.created_at ASC
-        \"\"\"
+        """
         pit_rows = conn.execute(sql_pit).fetchall()
         
         # For PickTask
-        sql_pick = \"\"\"
+        sql_pick = """
             SELECT p.id, 'Pick' as task_type, p.status, p.notes, p.pick_number, p.priority,
                    p.created_at, p.started_at, p.quantity, p.from_location,
                    c.name as customer, pt.name as product_type,
@@ -816,7 +816,7 @@ def pit_tasks(req: func.HttpRequest) -> func.HttpResponse:
             LEFT JOIN dbo.pit_staginglane sl ON p.staging_lane_id = sl.id
             WHERE p.status IN ('Pending', 'In Progress')
             ORDER BY CASE p.priority WHEN 'High' THEN 1 WHEN 'Normal' THEN 2 ELSE 3 END ASC, p.created_at ASC
-        \"\"\"
+        """
         pick_rows = conn.execute(sql_pick).fetchall()
         conn.close()
         
@@ -903,10 +903,10 @@ def pit_complete(req: func.HttpRequest) -> func.HttpResponse:
             if task_type in ('IB_Unload', 'OB_Load') and appt_id:
                 # Update driver visit
                 conn.execute(
-                    \"\"\"UPDATE dbo.core_drivervisit 
+                    """UPDATE dbo.core_drivervisit 
                        SET check_out_time = ?, in_out_status = 'Out', 
                            dwell_seconds = DATEDIFF(second, check_in_time, ?) 
-                       WHERE appointment_id = ? AND in_out_status = 'In'\"\"\",
+                       WHERE appointment_id = ? AND in_out_status = 'In'""",
                     (completed_at, completed_at, appt_id)
                 )
                 # Update appointment status
@@ -924,20 +924,20 @@ def pit_complete(req: func.HttpRequest) -> func.HttpResponse:
                 if task_type == 'IB_Unload':
                     # Get product info
                     appt_row = conn.execute(
-                        \"\"\"SELECT c.name as customer_name, pt.name as product_name 
+                        """SELECT c.name as customer_name, pt.name as product_name 
                            FROM dbo.core_appointment a
                            JOIN dbo.core_customer c ON a.customer_id = c.id
                            JOIN dbo.core_producttype pt ON a.product_type_id = pt.id
-                           WHERE a.id = ?\"\"\", (appt_id,)
+                           WHERE a.id = ?""", (appt_id,)
                     ).fetchone()
                     
                     prod_info = f"{appt_row['customer_name']} - {appt_row['product_name']}" if appt_row else "Unknown"
                     created_at = completed_at
                     
                     conn.execute(
-                        \"\"\"INSERT INTO dbo.pit_pittask 
+                        """INSERT INTO dbo.pit_pittask 
                            (task_type, status, product_info, notes, created_at, auto_checkout_triggered, appointment_id)
-                           VALUES ('Putaway', 'Pending', ?, '', ?, 0, ?)\"\"\",
+                           VALUES ('Putaway', 'Pending', ?, '', ?, 0, ?)""",
                         (prod_info, created_at, appt_id)
                     )
         
