@@ -1337,3 +1337,160 @@ async function renderAdmin(container) {
         }
     }
 }
+// --- PIT APP View --------------------------------------------------------
+async function renderPITBoard(container) {
+    container.innerHTML = 
+        <div class="row align-items-center mb-4">
+            <div class="col">
+                <span class="text-uppercase text-muted fw-bold" style="font-size: 11px; letter-spacing: 0.05em;">PIT APP</span>
+                <h1 class="operations-header-serif">Task Board</h1>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-primary btn-sm" id="btn-change-operator">
+                    <i class="bi bi-person-badge"></i> <span id="current-operator-name">Select Operator</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="row g-4" id="pit-board-content">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        </div>
+
+        <!-- Operator Select Modal -->
+        <div class="modal fade" id="operatorModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold">Select Operator</h5>
+                    </div>
+                    <div class="modal-body">
+                        <select id="operator-select" class="form-select form-select-lg mb-3">
+                            <option value="">-- Choose Operator --</option>
+                             + state.metadata.operators.map(o => <option value=" + o.id + "> + o.name + </option>).join('') + 
+                        </select>
+                        <button class="btn btn-primary w-100 py-2" id="btn-save-operator">Continue</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    ;
+
+    const operatorModal = new bootstrap.Modal(document.getElementById('operatorModal'));
+    
+    // Check local storage for operator
+    let operatorId = localStorage.getItem('pit_operator_id');
+    let operatorName = localStorage.getItem('pit_operator_name');
+    
+    if (!operatorId) {
+        operatorModal.show();
+    } else {
+        document.getElementById('current-operator-name').textContent = operatorName;
+        loadTasks();
+    }
+    
+    document.getElementById('btn-change-operator').addEventListener('click', () => {
+        document.getElementById('operator-select').value = operatorId || '';
+        operatorModal.show();
+    });
+    
+    document.getElementById('btn-save-operator').addEventListener('click', () => {
+        const sel = document.getElementById('operator-select');
+        if (sel.value) {
+            operatorId = sel.value;
+            operatorName = sel.options[sel.selectedIndex].text;
+            localStorage.setItem('pit_operator_id', operatorId);
+            localStorage.setItem('pit_operator_name', operatorName);
+            document.getElementById('current-operator-name').textContent = operatorName;
+            operatorModal.hide();
+            loadTasks();
+        }
+    });
+
+    async function loadTasks() {
+        const board = document.getElementById('pit-board-content');
+        board.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+        
+        const res = await fetch(CONFIG.apiBase + '/pit/tasks');
+        if (res.ok) {
+            const data = await res.json();
+            const allTasks = [...data.pit_tasks, ...data.pick_tasks];
+            
+            // Group tasks
+            const ibTasks = allTasks.filter(t => t.task_type === 'IB_Unload');
+            const obTasks = allTasks.filter(t => t.task_type === 'OB_Load');
+            const pwTasks = allTasks.filter(t => t.task_type === 'Putaway');
+            const pickTasks = allTasks.filter(t => t.task_type === 'Pick');
+            
+            const renderTaskCard = (t) => {
+                const isMine = t.operator_name === operatorName;
+                const statusBadge = t.status === 'In Progress' ? '<span class="badge bg-warning text-dark">In Progress</span>' : '<span class="badge bg-secondary">Pending</span>';
+                const actionBtn = t.status === 'Pending' 
+                    ? <button class="btn btn-primary btn-sm w-100 mt-2 btn-start-task" data-id="+t.id+" data-type="+(t.task_type==='Pick'?'Pick':'PIT')+">Start Task</button>
+                    : (isMine ? <button class="btn btn-success btn-sm w-100 mt-2 btn-complete-task" data-id="+t.id+" data-type="+(t.task_type==='Pick'?'Pick':'PIT')+">Complete Task</button> : <button class="btn btn-outline-secondary btn-sm w-100 mt-2" disabled>Started by +t.operator_name+</button>);
+                
+                return 
+                    <div class="card mb-2 shadow-sm  + (t.status === 'In Progress' ? (isMine ? 'border-primary' : 'border-warning') : '') + ">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-bold fs-6 mono"> + (t.pick_number || t.bol_shipment_no || 'No Ref') + </span>
+                                 + statusBadge + 
+                            </div>
+                            <div class="text-muted small mb-1"><i class="bi bi-building"></i>  + (t.customer || 'N/A') + </div>
+                            <div class="text-muted small mb-2"><i class="bi bi-box"></i>  + (t.product_type || t.product_info || 'N/A') + </div>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <span class="badge bg-light text-dark border"> + (t.lane_name || t.from_location || 'Any Lane') + </span>
+                            </div>
+                             + actionBtn + 
+                        </div>
+                    </div>
+                ;
+            };
+            
+            const renderColumn = (title, tasks, colorClass) => 
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card bg-light border-0 h-100">
+                        <div class="card-header border-0  + colorClass +  text-white py-3 fw-bold d-flex justify-content-between">
+                            <span> + title + </span>
+                            <span class="badge bg-white text-dark rounded-pill"> + tasks.length + </span>
+                        </div>
+                        <div class="card-body p-2" style="max-height: 70vh; overflow-y: auto;">
+                             + (tasks.length === 0 ? '<div class="text-center text-muted py-4 small">No tasks</div>' : tasks.map(renderTaskCard).join('')) + 
+                        </div>
+                    </div>
+                </div>
+            ;
+            
+            board.innerHTML = 
+                renderColumn('Inbound Unload', ibTasks, 'bg-primary') +
+                renderColumn('Outbound Load', obTasks, 'bg-info') +
+                renderColumn('Putaway', pwTasks, 'bg-secondary') +
+                renderColumn('Picking', pickTasks, 'bg-dark');
+                
+            // Attach events
+            document.querySelectorAll('.btn-start-task').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const type = e.target.getAttribute('data-type');
+                    await fetch(CONFIG.apiBase + '/pit/tasks/start', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({task_id: id, task_category: type, operator_id: operatorId})
+                    });
+                    loadTasks();
+                });
+            });
+            document.querySelectorAll('.btn-complete-task').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const type = e.target.getAttribute('data-type');
+                    await fetch(CONFIG.apiBase + '/pit/tasks/complete', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({task_id: id, task_category: type})
+                    });
+                    loadTasks();
+                });
+            });
+        }
+    }
+}

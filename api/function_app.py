@@ -776,3 +776,174 @@ def debug_db(req: func.HttpRequest) -> func.HttpResponse:
         })
     except Exception as e:
         return json_response({"error": str(e)}, status_code=500)
+
+# --- PIT APP ENDPOINTS --------------------------------------------------------
+
+@app.route(route="pit/tasks", methods=["GET", "OPTIONS"])
+def pit_tasks(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
+    
+    conn = get_db_connection()
+    try:
+        # Get pending/in-progress tasks
+        # For PITTask
+        sql_pit = \"\"\"
+            SELECT p.id, p.task_type, p.status, p.product_info, p.notes, 
+                   p.created_at, p.started_at, p.appointment_id,
+                   a.appt_type, a.bol_shipment_no, c.name as customer,
+                   o.name as operator_name, sl.lane_name
+            FROM dbo.pit_pittask p
+            LEFT JOIN dbo.core_appointment a ON p.appointment_id = a.id
+            LEFT JOIN dbo.core_customer c ON a.customer_id = c.id
+            LEFT JOIN dbo.core_pitoperator o ON p.operator_id = o.id
+            LEFT JOIN dbo.pit_staginglane sl ON p.staging_lane_id = sl.id
+            WHERE p.status IN ('Pending', 'In Progress')
+            ORDER BY p.created_at ASC
+        \"\"\"
+        pit_rows = conn.execute(sql_pit).fetchall()
+        
+        # For PickTask
+        sql_pick = \"\"\"
+            SELECT p.id, 'Pick' as task_type, p.status, p.notes, p.pick_number, p.priority,
+                   p.created_at, p.started_at, p.quantity, p.from_location,
+                   c.name as customer, pt.name as product_type,
+                   o.name as operator_name, sl.lane_name
+            FROM dbo.pit_picktask p
+            LEFT JOIN dbo.core_customer c ON p.customer_id = c.id
+            LEFT JOIN dbo.core_producttype pt ON p.product_type_id = pt.id
+            LEFT JOIN dbo.core_pitoperator o ON p.operator_id = o.id
+            LEFT JOIN dbo.pit_staginglane sl ON p.staging_lane_id = sl.id
+            WHERE p.status IN ('Pending', 'In Progress')
+            ORDER BY CASE p.priority WHEN 'High' THEN 1 WHEN 'Normal' THEN 2 ELSE 3 END ASC, p.created_at ASC
+        \"\"\"
+        pick_rows = conn.execute(sql_pick).fetchall()
+        conn.close()
+        
+        return json_response({
+            "pit_tasks": [dict(r) for r in pit_rows],
+            "pick_tasks": [dict(r) for r in pick_rows]
+        })
+    except Exception as e:
+        conn.close()
+        return json_response({"error": str(e)}, status_code=500)
+
+@app.route(route="pit/tasks/start", methods=["POST", "OPTIONS"])
+def pit_start(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
+        
+    conn = get_db_connection()
+    try:
+        body = req.get_json()
+        task_id = body.get("task_id")
+        task_category = body.get("task_category") # 'PIT' or 'Pick'
+        operator_id = body.get("operator_id")
+        
+        if not task_id or not task_category or not operator_id:
+            return json_response({"error": "Missing required fields"}, status_code=400)
+            
+        started_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+        table = "dbo.pit_picktask" if task_category == 'Pick' else "dbo.pit_pittask"
+        
+        conn.execute(
+            f"UPDATE {table} SET status = 'In Progress', operator_id = ?, started_at = ? WHERE id = ?",
+            (operator_id, started_at, task_id)
+        )
+        conn.close()
+        return json_response({"success": True})
+    except Exception as e:
+        conn.close()
+        return json_response({"error": str(e)}, status_code=500)
+
+@app.route(route="pit/tasks/complete", methods=["POST", "OPTIONS"])
+def pit_complete(req: func.HttpRequest) -> func.HttpResponse:
+    if not verify_request(req):
+        return json_response({"error": "Unauthorized: Invalid API Key"}, status_code=401)
+        
+    conn = get_db_connection()
+    try:
+        body = req.get_json()
+        task_id = body.get("task_id")
+        task_category = body.get("task_category")
+        
+        if not task_id or not task_category:
+            return json_response({"error": "Missing task_id or task_category"}, status_code=400)
+            
+        completed_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+        table = "dbo.pit_picktask" if task_category == 'Pick' else "dbo.pit_pittask"
+        
+        # Get start time to calculate duration
+        row = conn.execute(f"SELECT started_at{', task_type, appointment_id' if task_category != 'Pick' else ''} FROM {table} WHERE id = ?", (task_id,)).fetchone()
+        if not row:
+            return json_response({"error": "Task not found"}, status_code=404)
+            
+        duration = None
+        if row['started_at']:
+            try:
+                # Handle possible string vs datetime object from fetchone depending on sqlite/pyodbc
+                start_val = row['started_at']
+                if isinstance(start_val, str):
+                    start_dt = datetime.datetime.fromisoformat(start_val.replace('Z', ''))
+                else:
+                    start_dt = start_val
+                duration = int((datetime.datetime.now() - start_dt).total_seconds())
+            except Exception:
+                duration = 0
+                
+        conn.execute(
+            f"UPDATE {table} SET status = 'Completed', completed_at = ?, duration_seconds = ? WHERE id = ?",
+            (completed_at, duration, task_id)
+        )
+        
+        # Auto-checkout logic for PITTask IB/OB
+        if task_category != 'Pick':
+            task_type = row['task_type']
+            appt_id = row['appointment_id']
+            if task_type in ('IB_Unload', 'OB_Load') and appt_id:
+                # Update driver visit
+                conn.execute(
+                    \"\"\"UPDATE dbo.core_drivervisit 
+                       SET check_out_time = ?, in_out_status = 'Out', 
+                           dwell_seconds = DATEDIFF(second, check_in_time, ?) 
+                       WHERE appointment_id = ? AND in_out_status = 'In'\"\"\",
+                    (completed_at, completed_at, appt_id)
+                )
+                # Update appointment status
+                conn.execute(
+                    "UPDATE dbo.core_appointment SET status = 'Completed' WHERE id = ?",
+                    (appt_id,)
+                )
+                # Mark auto checkout triggered
+                conn.execute(
+                    f"UPDATE {table} SET auto_checkout_triggered = 1 WHERE id = ?",
+                    (task_id,)
+                )
+                
+                # Auto-create Putaway task for Inbound
+                if task_type == 'IB_Unload':
+                    # Get product info
+                    appt_row = conn.execute(
+                        \"\"\"SELECT c.name as customer_name, pt.name as product_name 
+                           FROM dbo.core_appointment a
+                           JOIN dbo.core_customer c ON a.customer_id = c.id
+                           JOIN dbo.core_producttype pt ON a.product_type_id = pt.id
+                           WHERE a.id = ?\"\"\", (appt_id,)
+                    ).fetchone()
+                    
+                    prod_info = f"{appt_row['customer_name']} - {appt_row['product_name']}" if appt_row else "Unknown"
+                    created_at = completed_at
+                    
+                    conn.execute(
+                        \"\"\"INSERT INTO dbo.pit_pittask 
+                           (task_type, status, product_info, notes, created_at, auto_checkout_triggered, appointment_id)
+                           VALUES ('Putaway', 'Pending', ?, '', ?, 0, ?)\"\"\",
+                        (prod_info, created_at, appt_id)
+                    )
+        
+        conn.close()
+        return json_response({"success": True})
+    except Exception as e:
+        conn.close()
+        return json_response({"error": str(e)}, status_code=500)
+
