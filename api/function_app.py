@@ -756,3 +756,20 @@ def admin_entity(req: func.HttpRequest) -> func.HttpResponse:
         conn.close()
         return json_response({"error": str(e)}, status_code=500)
 
+
+# --- DEBUG Endpoint --------------------------------------------------------
+@app.route(route="debug-db", methods=["GET"])
+def debug_db(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        conn = get_db_connection()
+        db_name = conn.execute("SELECT DB_NAME()").fetchone()[0]
+        user_name = conn.execute("SELECT SYSTEM_USER").fetchone()[0]
+        tables = [r[0] for r in conn.execute("SELECT table_schema + '.' + table_name FROM information_schema.tables").fetchall()]
+        conn.close()
+        return json_response({
+            "database_connected_to": db_name,
+            "logged_in_as": user_name,
+            "tables_found": tables
+        })
+    except Exception as e:
+        return json_response({"error": str(e)}, status_code=500)
