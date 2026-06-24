@@ -134,7 +134,7 @@ import datetime
 import decimal
 
 def default_serializer(obj):
-    if isinstance(obj, (datetime.date, datetime.datetime)):
+    if isinstance(obj, (datetime.date, datetime.datetime, datetime.time)):
         return obj.isoformat()
     if isinstance(obj, decimal.Decimal):
         return float(obj)
@@ -331,7 +331,10 @@ def appointments(req: func.HttpRequest) -> func.HttpResponse:
         appointments = [dict(r) for r in rows]
         return json_response({"appointments": appointments})
     except Exception as e:
-        conn.close()
+        try:
+            conn.close()
+        except:
+            pass
         return json_response({"error": str(e)}, status_code=500)
 
 # ─── 4. Check BOL Number Endpoint ────────────────────────────────────────────
