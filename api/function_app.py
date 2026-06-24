@@ -52,6 +52,9 @@ class DatabaseConnection:
         self.is_azure = conn_str is not None
         if self.is_azure:
             import pyodbc
+            # Standardize ADO.NET connection parameters for standard unixODBC compatibility
+            conn_str = conn_str.replace("Encrypt=True", "Encrypt=yes").replace("Encrypt=False", "Encrypt=no")
+            conn_str = conn_str.replace("encrypt=True", "encrypt=yes").replace("encrypt=False", "encrypt=no")
             if "Driver=" not in conn_str:
                 try:
                     # Try Driver 18 first
