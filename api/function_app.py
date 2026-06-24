@@ -52,7 +52,20 @@ class DatabaseConnection:
         self.is_azure = conn_str is not None
         if self.is_azure:
             import pyodbc
-            self.conn = pyodbc.connect(conn_str, autocommit=True)
+            if "Driver=" not in conn_str:
+                try:
+                    # Try Driver 18 first
+                    test_str = f"Driver={{ODBC Driver 18 for SQL Server}};{conn_str}"
+                    self.conn = pyodbc.connect(test_str, autocommit=True)
+                except pyodbc.Error as e:
+                    # If driver 18 is not found (IM002), fall back to Driver 17
+                    if "IM002" in str(e):
+                        test_str = f"Driver={{ODBC Driver 17 for SQL Server}};{conn_str}"
+                        self.conn = pyodbc.connect(test_str, autocommit=True)
+                    else:
+                        raise e
+            else:
+                self.conn = pyodbc.connect(conn_str, autocommit=True)
         else:
             db_path = os.environ.get("DB_PATH", "../db.sqlite3")
             if not os.path.isabs(db_path):
